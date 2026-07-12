@@ -1,0 +1,59 @@
+{% extends "layout/base.html" %}
+{% from "components/icons.html" import search, back_arrow, lightning %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="search-page">
+
+    <div class="search-topbar">
+
+        <a href="javascript:history.back()" class="back-btn">{{ back_arrow(22, "#FFD700") }}</a>
+
+        <div class="search-field">
+            {{ search(18, "#888") }}
+            <input
+                type="text"
+                id="search-input"
+                placeholder="Chercher un aventurier..."
+                autocomplete="off"
+                autofocus>
+        </div>
+
+    </div>
+
+    <div class="search-results" id="search-results">
+
+        {% for user in users %}
+
+        <a href="/user/{{ user[0] }}" class="search-row" data-pseudo="{{ user[1]|lower }}">
+
+            {% if user[2] %}
+            <img src="{{ user[2] }}" class="search-avatar">
+            {% else %}
+            <div class="search-avatar placeholder">{{ user[1][0]|upper }}</div>
+            {% endif %}
+
+            <div class="search-info">
+                <h3>{{ user[1] }}</h3>
+                <span>{{ lightning(12, "#FFD700") }} Niveau {{ user[3] }}</span>
+            </div>
+
+        </a>
+
+        {% endfor %}
+
+    </div>
+
+    <p class="search-empty" id="search-empty" style="display:none;">Aucun aventurier trouvé.</p>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+{% endblock %}

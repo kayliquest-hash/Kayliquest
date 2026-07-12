@@ -1,0 +1,130 @@
+/* =========================================
+   KAYLI QUEST - NOTIFICATIONS
+========================================= */
+
+.notifications-page{
+    min-height:100vh;
+    background:#000;
+    padding-bottom:30px;
+}
+
+.notif-topbar{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    padding:18px 16px;
+    border-bottom:1px solid #1a1a1a;
+}
+
+.notif-topbar h1{
+    color:#FFD700;
+    font-size:18px;
+    font-weight:800;
+}
+
+.back-btn{
+    position:absolute;
+    left:16px;
+    display:flex;
+}
+
+.notif-list{
+    padding:6px 10px;
+}
+
+.notif-row{
+    position:relative;
+
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    padding:12px 10px;
+    text-decoration:none;
+    border-radius:14px;
+}
+
+.notif-row.unread{
+    background:rgba(255,215,0,0.06);
+}
+
+.notif-row:active{
+    background:#111;
+}
+
+.notif-avatar{
+    width:46px;
+    height:46px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid #FFD700;
+    flex-shrink:0;
+}
+
+.notif-avatar.placeholder{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#1a1a1a;
+    color:#FFD700;
+    font-weight:800;
+}
+
+.notif-type-icon{
+    position:absolute;
+    left:38px;
+    top:32px;
+
+    width:22px;
+    height:22px;
+    border-radius:50%;
+
+    background:#0a0a0a;
+    border:2px solid #000;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.notif-text{
+    flex:1;
+    min-width:0;
+}
+
+.notif-text p{
+    color:#eee;
+    font-size:13.5px;
+    line-height:1.4;
+}
+
+.notif-text strong{
+    color:white;
+    font-weight:700;
+}
+
+.notif-time{
+    display:block;
+    margin-top:2px;
+    color:#777;
+    font-size:12px;
+}
+
+.notif-empty{
+    text-align:center;
+    margin-top:100px;
+    padding:0 30px;
+}
+
+.notif-empty p{
+    color:#ccc;
+    font-weight:600;
+    margin:16px 0 6px;
+}
+
+.notif-empty span{
+    color:#666;
+    font-size:13px;
+}

@@ -1,0 +1,114 @@
+/* =========================================
+   KAYLI QUEST - RECHERCHE
+========================================= */
+
+.search-page{
+    min-height:100vh;
+    background:#000;
+    padding-bottom:30px;
+}
+
+.search-topbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    padding:16px;
+    position:sticky;
+    top:0;
+    background:#000;
+    z-index:10;
+}
+
+.back-btn{
+    flex-shrink:0;
+    display:flex;
+}
+
+.search-field{
+    flex:1;
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    background:#141414;
+    border:2px solid #2a2a2a;
+    border-radius:22px;
+
+    padding:11px 16px;
+}
+
+.search-field:focus-within{
+    border-color:#FFD700;
+}
+
+.search-field input{
+    flex:1;
+    background:none;
+    border:none;
+    outline:none;
+    color:white;
+    font-size:14px;
+}
+
+.search-field input::placeholder{
+    color:#777;
+}
+
+.search-results{
+    padding:6px 10px;
+}
+
+.search-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+
+    padding:11px 8px;
+    text-decoration:none;
+    border-radius:14px;
+}
+
+.search-row:active{
+    background:#0f0f0f;
+}
+
+.search-avatar{
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid #FFD700;
+    flex-shrink:0;
+}
+
+.search-avatar.placeholder{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#1a1a1a;
+    color:#FFD700;
+    font-weight:800;
+}
+
+.search-info h3{
+    color:white;
+    font-size:15px;
+    font-weight:700;
+}
+
+.search-info span{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    color:#FFD700;
+    font-size:12px;
+    font-weight:600;
+    margin-top:2px;
+}
+
+.search-empty{
+    text-align:center;
+    color:#777;
+    margin-top:60px;
+}

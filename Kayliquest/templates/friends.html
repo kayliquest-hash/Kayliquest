@@ -1,0 +1,68 @@
+{% extends "layout/base.html" %}
+
+{% block css %}
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+<title>Amis</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/base.css') }}">
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/friends.css') }}">
+
+{% block content %}
+
+</head>
+
+<div class="friends-page">
+
+<h1 class="friends-title">
+Demandes d'amis ({{ nb_demandes }})
+</h1>
+
+{% if nb_demandes == 0 %}
+
+<div class="empty-friends">
+
+👥
+
+<p>Aucune demande d'ami</p>
+
+</div>
+
+{% endif %}
+
+{% for demande in demandes %}
+
+<div class="friend-card">
+
+<img
+src="{{ url_for('static', filename='uploads/' + demande[3]) }}"
+class="friend-avatar">
+
+<div class="friend-info">
+
+<h3>{{ demande[2] }}</h3>
+
+<p>Veut devenir ton ami</p>
+
+</div>
+
+<a
+href="/accept_friend/{{ demande[0] }}"
+class="accept-btn">
+
+Accepter
+
+</a>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% endblock %}

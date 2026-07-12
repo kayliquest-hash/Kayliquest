@@ -1,0 +1,160 @@
+/* =========================================
+   KAYLI QUEST - AMIS
+========================================= */
+
+.friends-page{
+    min-height:100vh;
+    background:#000;
+    padding:22px 18px 100px;
+}
+
+.friends-title{
+    color:#FFD700;
+    font-size:30px;
+    font-weight:900;
+    margin-bottom:18px;
+}
+
+.section-title{
+    color:#888;
+    font-size:13px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin:22px 0 12px;
+}
+
+.requests-list{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.friend-card{
+    display:flex;
+    align-items:center;
+    gap:14px;
+
+    background:#111;
+    border:2px solid #2a2a2a;
+    border-radius:20px;
+    padding:14px;
+}
+
+.friend-avatar{
+    width:52px;
+    height:52px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid #FFD700;
+    flex-shrink:0;
+}
+
+.friend-avatar.placeholder{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#1a1a1a;
+    color:#FFD700;
+    font-weight:800;
+}
+
+.friend-info{
+    flex:1;
+    min-width:0;
+}
+
+.friend-info h3{
+    color:white;
+    font-size:15px;
+    font-weight:700;
+}
+
+.friend-info p{
+    color:#999;
+    font-size:12.5px;
+    margin-top:2px;
+}
+
+.ami-level{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    color:#FFD700;
+    font-size:12px;
+    font-weight:600;
+    margin-top:2px;
+}
+
+.accept-btn{
+    background:#FFD700;
+    color:black;
+    text-decoration:none;
+    font-weight:700;
+    font-size:13px;
+    padding:10px 16px;
+    border-radius:16px;
+    flex-shrink:0;
+}
+
+/* Liste d'amis */
+
+.ami-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.ami-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    background:#0d0d0d;
+    border:1px solid #1e1e1e;
+    border-radius:20px;
+    padding:12px 12px 12px 14px;
+}
+
+.ami-link{
+    flex:1;
+    min-width:0;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    text-decoration:none;
+}
+
+.message-btn{
+    width:40px;
+    height:40px;
+    flex-shrink:0;
+
+    background:#FFD700;
+    border-radius:50%;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+}
+
+/* Etat vide */
+
+.empty-friends{
+    text-align:center;
+    margin-top:40px;
+    padding:0 20px;
+}
+
+.empty-friends p{
+    color:#ccc;
+    font-size:15px;
+    font-weight:600;
+    margin:14px 0 6px;
+}
+
+.empty-sub{
+    color:#666;
+    font-size:13px;
+}

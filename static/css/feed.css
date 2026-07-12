@@ -1,0 +1,745 @@
+/* =========================================
+   KAYLI QUEST - FEED (design carte)
+========================================= */
+
+/* --- En-tête --- */
+
+.feed-header{
+    position:sticky;
+    top:0;
+    z-index:100;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    padding:18px 18px 12px;
+
+    background:#000;
+}
+
+.header-icon-btn{
+    position:relative;
+
+    width:40px;
+    height:40px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    flex-shrink:0;
+    text-decoration:none;
+}
+
+.notif-dot{
+    position:absolute;
+    top:6px;
+    right:8px;
+
+    width:8px;
+    height:8px;
+    border-radius:50%;
+
+    background:#FFD700;
+    border:2px solid #000;
+}
+
+.search-btn{
+    background:#FFD700;
+    border-radius:50%;
+    text-decoration:none;
+}
+
+.feed-logo{
+    font-size:22px;
+    letter-spacing:2px;
+    text-align:center;
+    line-height:1.1;
+}
+
+.feed-logo span{
+    display:block;
+    font-size:11px;
+    letter-spacing:5px;
+    margin-top:1px;
+}
+
+/* --- Onglets Posts / Kayli --- */
+
+.feed-tabs{
+    position:sticky;
+    top:70px;
+    z-index:99;
+
+    display:flex;
+    gap:8px;
+
+    padding:4px 16px 10px;
+    background:#000;
+    border-bottom:1px solid #141414;
+}
+
+.feed-tab{
+    background:none;
+    border:none;
+    font-family:inherit;
+    cursor:pointer;
+
+    padding:8px 4px;
+
+    color:#666;
+    font-size:15px;
+    font-weight:700;
+
+    border-bottom:2px solid transparent;
+}
+
+.feed-tab.active{
+    color:#FFD700;
+    border-bottom:2px solid #FFD700;
+}
+
+.feed-panel[hidden]{
+    display:none;
+}
+
+/* =========================================
+   ONGLET KAYLI (vidéos verticales style TikTok)
+   Conteneur dédié et indépendant du scroll de la
+   page : plus fiable sur mobile que le scroll-snap
+   posé directement sur le body.
+========================================= */
+
+.kayli-scroll{
+    height:calc(100vh - 196px);
+    height:calc(100dvh - 196px);
+
+    overflow-y:scroll;
+    scroll-snap-type:y mandatory;
+
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+
+    background:#000;
+}
+
+.kayli-scroll::-webkit-scrollbar{
+    display:none;
+}
+
+.kayli-post{
+    position:relative;
+    width:100%;
+    height:100%;
+
+    overflow:hidden;
+    background:#050505;
+
+    scroll-snap-align:start;
+    scroll-snap-stop:always;
+}
+
+.kayli-empty{
+    height:100%;
+}
+
+.kayli-media-wrapper{
+    position:absolute;
+    inset:0;
+}
+
+.kayli-media-wrapper video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+}
+
+.kayli-mute-btn{
+    position:absolute;
+    top:16px;
+    right:14px;
+    z-index:10;
+
+    width:36px;
+    height:36px;
+    border-radius:50%;
+
+    background:rgba(0,0,0,0.45);
+    border:none;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.kayli-mute-btn .icon-unmuted{
+    display:none;
+}
+
+.kayli-mute-btn.is-muted .icon-muted{
+    display:flex;
+}
+
+.kayli-mute-btn:not(.is-muted) .icon-muted{
+    display:none;
+}
+
+.kayli-mute-btn:not(.is-muted) .icon-unmuted{
+    display:flex;
+}
+
+.kayli-gradient{
+    position:absolute;
+    inset:0;
+    z-index:4;
+    pointer-events:none;
+
+    background:linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.4) 0%,
+        rgba(0,0,0,0) 24%,
+        rgba(0,0,0,0) 55%,
+        rgba(0,0,0,0.88) 100%
+    );
+}
+
+.kayli-play-indicator{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(0.6);
+
+    width:74px;
+    height:74px;
+
+    background:rgba(0,0,0,0.5);
+    border-radius:50%;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    opacity:0;
+    pointer-events:none;
+
+    transition:opacity 0.2s, transform 0.2s;
+    z-index:6;
+}
+
+.kayli-play-indicator.show{
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+}
+
+.kayli-play-triangle{
+    width:0;
+    height:0;
+    border-top:16px solid transparent;
+    border-bottom:16px solid transparent;
+    border-left:24px solid #FFD700;
+    margin-left:5px;
+}
+
+.kayli-user{
+    position:absolute;
+    top:16px;
+    left:16px;
+    right:70px;
+
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    z-index:10;
+}
+
+.kayli-avatar{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid #FFD700;
+    flex-shrink:0;
+}
+
+.kayli-avatar.placeholder{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#1a1a1a;
+    color:#FFD700;
+    font-weight:800;
+}
+
+.kayli-username{
+    display:block;
+    color:white;
+    font-weight:700;
+    font-size:14px;
+    text-decoration:none;
+}
+
+.kayli-level{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    color:#FFD700;
+    font-size:11.5px;
+    font-weight:600;
+    margin-top:2px;
+}
+
+.kayli-side-buttons{
+    position:absolute;
+    right:10px;
+    bottom:74px;
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+
+    z-index:10;
+}
+
+.kayli-side-buttons .act-btn{
+    padding:8px;
+}
+
+.kayli-side-buttons .act-like,
+.kayli-side-buttons .act-save{
+    width:auto;
+    height:auto;
+}
+
+.kayli-side-buttons .act-like .icon-filled,
+.kayli-side-buttons .act-save .icon-filled{
+    top:8px;
+    left:8px;
+}
+
+.kayli-count{
+    display:block;
+    margin:-4px 0 12px;
+    color:white;
+    font-weight:700;
+    font-size:12px;
+    text-shadow:0 1px 3px rgba(0,0,0,0.8);
+}
+
+.kayli-caption{
+    position:absolute;
+    left:16px;
+    right:78px;
+    bottom:22px;
+
+    z-index:10;
+
+    color:white;
+    font-size:13.5px;
+    line-height:1.4;
+    text-shadow:0 1px 4px rgba(0,0,0,0.85);
+
+    cursor:pointer;
+
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:3;
+    overflow:hidden;
+}
+
+/* --- Flux --- */
+
+.feed{
+    max-width:600px;
+    margin:0 auto;
+    padding:6px 0 30px;
+}
+
+/* --- Carte --- */
+
+.post-card{
+    background:#000;
+    padding:16px 16px 10px;
+    border-bottom:8px solid #0a0a0a;
+}
+
+.card-header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:12px;
+}
+
+.card-avatar{
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid #FFD700;
+    flex-shrink:0;
+}
+
+.card-avatar.placeholder{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#1a1a1a;
+    color:#FFD700;
+    font-weight:800;
+}
+
+.card-user-info{
+    flex:1;
+    min-width:0;
+}
+
+.card-username{
+    display:block;
+    color:white;
+    font-weight:700;
+    font-size:15px;
+    text-decoration:none;
+}
+
+.card-level{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    color:#FFD700;
+    font-size:12.5px;
+    font-weight:600;
+    margin-top:1px;
+}
+
+.card-menu-btn{
+    background:none;
+    border:none;
+    padding:6px;
+    flex-shrink:0;
+}
+
+.card-caption{
+    color:#f0f0f0;
+    font-size:14.5px;
+    line-height:1.45;
+    margin-bottom:12px;
+    cursor:pointer;
+
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+}
+
+.card-caption.truncated{
+    -webkit-line-clamp:2;
+}
+
+.card-caption.truncated::after{
+    content:" ... voir plus";
+    color:#999;
+    font-weight:600;
+}
+
+/* --- Média --- */
+
+.card-media{
+    position:relative;
+    width:100%;
+
+    border-radius:18px;
+    overflow:hidden;
+
+    background:#0a0a0a;
+
+    aspect-ratio:4/5;
+}
+
+.card-media img,
+.card-media video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+}
+
+.heart-burst{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(0);
+
+    width:110px;
+    height:110px;
+
+    opacity:0;
+    pointer-events:none;
+    z-index:20;
+}
+
+.heart-burst.burst{
+    animation:heartBurst 0.7s ease forwards;
+}
+
+.heart-burst::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:#FF3B5C;
+    -webkit-mask:url('/static/images/icons/coeur.png') center/contain no-repeat;
+    mask:url('/static/images/icons/coeur.png') center/contain no-repeat;
+}
+
+@keyframes heartBurst{
+    0%{ opacity:0; transform:translate(-50%,-50%) scale(0); }
+    25%{ opacity:1; transform:translate(-50%,-50%) scale(1.15); }
+    45%{ transform:translate(-50%,-50%) scale(0.95); }
+    80%{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+    100%{ opacity:0; transform:translate(-50%,-50%) scale(1); }
+}
+
+/* --- Actions --- */
+
+.card-actions{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:12px 2px 4px;
+}
+
+.act-btn{
+    background:none;
+    border:none;
+    padding:4px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.act-like{
+    position:relative;
+    width:23px;
+    height:23px;
+}
+
+.act-like .icon-filled{
+    position:absolute;
+    top:4px;
+    left:4px;
+    opacity:0;
+    transform:scale(0.5);
+    transition:opacity 0.15s, transform 0.15s;
+}
+
+.act-like .icon-outline{
+    display:block;
+}
+
+.act-like.liked .icon-outline{
+    opacity:0;
+}
+
+.act-like.liked .icon-filled{
+    opacity:1;
+    transform:scale(1);
+}
+
+.act-like.like-animation .icon-filled{
+    animation:likePop 0.4s ease;
+}
+
+@keyframes likePop{
+    0%{ transform:scale(1); }
+    50%{ transform:scale(1.35); }
+    100%{ transform:scale(1); }
+}
+
+.act-save{
+    position:relative;
+    width:22px;
+    height:22px;
+}
+
+.act-save .icon-filled{
+    position:absolute;
+    top:0;
+    left:0;
+    opacity:0;
+    transform:scale(0.5);
+    transition:opacity 0.15s, transform 0.15s;
+}
+
+.act-save .icon-outline{
+    display:block;
+}
+
+.act-save.saved .icon-outline{
+    opacity:0;
+}
+
+.act-save.saved .icon-filled{
+    opacity:1;
+    transform:scale(1);
+}
+
+.act-save.save-animation .icon-filled{
+    animation:likePop 0.4s ease;
+}
+
+.act-count{
+    color:#ddd;
+    font-size:13.5px;
+    font-weight:600;
+    margin-right:14px;
+}
+
+.act-spacer{
+    flex:1;
+}
+
+/* --- Aperçu commentaire --- */
+
+.card-comment-preview{
+    padding:6px 2px 2px;
+}
+
+.card-comment-preview p{
+    color:#eee;
+    font-size:13.5px;
+    line-height:1.4;
+}
+
+.preview-user{
+    color:white;
+    font-weight:700;
+    text-decoration:none;
+    margin-right:6px;
+}
+
+.preview-meta{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:4px;
+
+    font-size:12px;
+    color:#777;
+}
+
+.preview-meta a{
+    color:#FFD700;
+    text-decoration:none;
+    font-weight:700;
+}
+
+.see-more-comments{
+    display:flex;
+    align-items:center;
+    gap:4px;
+
+    color:#999;
+    font-size:13px;
+    text-decoration:none;
+
+    padding:8px 2px 2px;
+}
+
+.card-views{
+    display:block;
+    margin-top:8px;
+    color:#555;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+}
+
+/* --- Toast (partage) --- */
+
+.kq-toast{
+    position:fixed;
+    left:50%;
+    bottom:90px;
+    transform:translate(-50%,10px);
+
+    background:rgba(20,20,20,0.95);
+    color:#FFD700;
+
+    border:2px solid #FFD700;
+    border-radius:20px;
+
+    padding:10px 22px;
+
+    font-size:14px;
+    font-weight:600;
+
+    opacity:0;
+
+    transition:opacity 0.25s, transform 0.25s;
+
+    z-index:99999;
+}
+
+.kq-toast.show{
+    opacity:1;
+    transform:translate(-50%,0);
+}
+
+/* --- Etat vide --- */
+
+.empty-feed{
+    min-height:70vh;
+    width:100%;
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+
+    text-align:center;
+
+    padding:0 30px;
+}
+
+.empty-icon{
+    width:70px;
+    height:70px;
+    opacity:0.7;
+    margin-bottom:20px;
+}
+
+.empty-feed h2{
+    color:#FFD700;
+    font-size:22px;
+    margin-bottom:8px;
+}
+
+.empty-feed p{
+    color:#aaa;
+    margin-bottom:25px;
+}
+
+.empty-btn{
+    background:#FFD700;
+    color:black;
+
+    text-decoration:none;
+    font-weight:bold;
+
+    padding:14px 34px;
+    border-radius:20px;
+}
+
+@media (min-width:600px){
+
+    .post-card{
+        border-radius:20px;
+        border:1px solid #1a1a1a;
+        border-bottom:1px solid #1a1a1a;
+        margin-bottom:16px;
+        padding:18px;
+    }
+
+}

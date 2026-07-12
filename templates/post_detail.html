@@ -1,0 +1,54 @@
+{% extends "layout/base.html" %}
+
+{% from "components/icons.html" import back_arrow, eye, comment_bubble %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/post_detail.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="detail-page">
+
+    <div class="detail-topbar">
+        <a href="javascript:history.back()" class="back-btn">{{ back_arrow(20, "#FFD700") }}</a>
+        <h1>Publication</h1>
+    </div>
+
+    {% set extension = post[2].split('.')[-1].lower() if post[2] else '' %}
+
+    <div class="detail-media">
+
+        {% if extension in ['mp4','mov','webm'] %}
+
+        <video src="{{ post[2] }}" controls playsinline></video>
+
+        {% elif post[2] %}
+
+        <img src="{{ post[2] }}">
+
+        {% endif %}
+
+    </div>
+
+    <div class="detail-info">
+
+        <a href="/user/{{ post[1] }}" class="detail-author">{{ post[5] }}</a>
+
+        {% if post[3] %}
+        <p class="detail-caption">{{ post[3] }}</p>
+        {% endif %}
+
+        <div class="detail-meta">
+
+            <span class="meta-with-icon">{{ eye(15, "#999") }} {{ post[4]|format_count }} vues</span>
+
+            <a href="/comments/{{ post[0] }}" class="detail-comment-link">{{ comment_bubble(15, "#FFD700") }} Voir les commentaires</a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

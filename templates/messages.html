@@ -1,0 +1,58 @@
+{% extends "layout/base.html" %}
+
+{% from "components/icons.html" import envelope %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/messages.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="messages-page">
+
+    <h1 class="messages-title">Messages</h1>
+
+    {% if conversations|length == 0 %}
+
+    <div class="empty-messages">
+        <div class="empty-icon">{{ envelope(46, "#555") }}</div>
+        <p>Aucune conversation pour l'instant</p>
+        <a href="/friends" class="empty-btn">Trouver des amis</a>
+    </div>
+
+    {% else %}
+
+    <div class="conversation-list">
+
+    {% for c in conversations %}
+
+        {% set conv_id, other_id, pseudo, photo, last_msg, last_time, unread = c %}
+
+        <a href="/messages/{{ other_id }}" class="conversation-card {% if unread > 0 %}unread{% endif %}">
+
+            {% if photo %}
+            <img src="{{ photo }}" class="conv-avatar">
+            {% else %}
+            <div class="conv-avatar placeholder">{{ pseudo[0]|upper }}</div>
+            {% endif %}
+
+            <div class="conv-info">
+                <h3>{{ pseudo }}</h3>
+                <p>{{ last_msg or "Dites bonjour !" }}</p>
+            </div>
+
+            {% if unread > 0 %}
+            <span class="unread-badge">{{ unread }}</span>
+            {% endif %}
+
+        </a>
+
+    {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

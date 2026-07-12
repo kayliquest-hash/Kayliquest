@@ -1,0 +1,113 @@
+{% extends "layout/base.html" %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="profile-page">
+
+    <div class="banner"></div>
+
+    <div class="profile-head">
+
+        {% if user[5] %}
+        <img
+            src="{{ url_for('static', filename='uploads/' + user[5]) }}"
+            class="profile-photo">
+        {% else %}
+        <div class="profile-photo placeholder">{{ user[1][0]|upper }}</div>
+        {% endif %}
+
+        <h1>{{ user[1] }}</h1>
+
+        <div class="level-pill">Niveau {{ user[7] }}</div>
+
+        {% if user[4] %}
+        <p class="bio">{{ user[4] }}</p>
+        {% endif %}
+
+        <div class="stats">
+
+            <div class="stat">
+                <h2>{{ posts|length }}</h2>
+                <p>Publications</p>
+            </div>
+
+            <div class="stat">
+                <h2>{{ nb_amis }}</h2>
+                <p>Amis</p>
+            </div>
+
+            <div class="stat">
+                <h2>{{ user[6] }}</h2>
+                <p>XP</p>
+            </div>
+
+            <div class="stat">
+                <h2>{{ user[8] }}</h2>
+                <p>Quêtes</p>
+            </div>
+
+        </div>
+
+        <div class="profile-buttons">
+
+            <a href="/create_post" class="btn btn-primary">➕ Publier</a>
+            <a href="/quest" class="btn btn-outline">🏆 Quêtes</a>
+            <a href="/messages" class="btn btn-outline">✉️ Messages</a>
+
+        </div>
+
+    </div>
+
+    <div class="profile-tabs">
+        <span class="tab active">Publications</span>
+    </div>
+
+    {% if posts|length == 0 %}
+
+    <div class="empty-posts">
+        <p>Tu n'as encore rien publié.</p>
+        <a href="/create_post" class="empty-btn">Créer ta première publication</a>
+    </div>
+
+    {% else %}
+
+    <div class="posts-grid">
+
+    {% for post in posts %}
+
+        {% set extension = post[2].split('.')[-1].lower() if post[2] else '' %}
+
+        <a href="/post/{{ post[0] }}" class="post-item">
+
+            {% if extension in ['mp4','mov','webm'] %}
+
+            <video muted playsinline preload="metadata">
+                <source src="{{ post[2] }}">
+            </video>
+            <span class="video-tag">▶</span>
+
+            {% else %}
+
+            <img src="{{ post[2] }}" loading="lazy">
+
+            {% endif %}
+
+            <div class="post-item-overlay">
+                <span>👁 {{ (post[4] if post[4] is not none else 0) | format_count }}</span>
+            </div>
+
+        </a>
+
+    {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

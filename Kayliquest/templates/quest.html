@@ -1,0 +1,93 @@
+{% extends "layout/base.html" %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/quest.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="quest-page">
+
+    <div class="quest-header">
+
+        <h1>Quêtes du jour</h1>
+
+        <div class="level-card">
+
+            <div class="level-badge">Niv. {{ niveau }}</div>
+
+            <div class="xp-bar">
+                <div class="xp-fill" style="width:{{ xp }}%"></div>
+            </div>
+
+            <div class="xp-label">{{ xp }} / 100 XP</div>
+
+        </div>
+
+        <div class="quest-stats">
+            <div class="quest-stat">
+                <h2>{{ quetes }}</h2>
+                <p>Quêtes accomplies</p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="quest-list">
+
+    {% for q in quests %}
+
+        <div class="quest-card {% if q.claimed %}claimed{% elif q.completed %}ready{% endif %}"
+             data-quest-id="{{ q.id }}">
+
+            <div class="quest-icon">{{ q.icon }}</div>
+
+            <div class="quest-info">
+
+                <h3>{{ q.title }}</h3>
+                <p>{{ q.description }}</p>
+
+                <div class="quest-progress-bar">
+                    <div class="quest-progress-fill"
+                         style="width:{{ (q.progress / q.target * 100) | round(0, 'floor') }}%"></div>
+                </div>
+
+                <span class="quest-progress-label">{{ q.progress }} / {{ q.target }}</span>
+
+            </div>
+
+            <div class="quest-action">
+
+                <span class="quest-xp">+{{ q.xp_reward }} XP</span>
+
+                {% if q.claimed %}
+
+                <button class="quest-btn done" disabled>✓ Fait</button>
+
+                {% elif q.completed %}
+
+                <button class="quest-btn claim" onclick="claimQuest({{ q.id }}, this)">Réclamer</button>
+
+                {% else %}
+
+                <button class="quest-btn locked" disabled>En cours</button>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    {% endfor %}
+
+    </div>
+
+    <p class="quest-refresh-note">Les quêtes se renouvellent chaque jour, reviens demain pour de nouvelles récompenses !</p>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/quest.js') }}"></script>
+{% endblock %}

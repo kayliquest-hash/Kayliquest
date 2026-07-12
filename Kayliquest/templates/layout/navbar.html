@@ -1,0 +1,27 @@
+<nav class="bottom-nav">
+
+    <a href="/feed" class="nav-item {% if request.path == '/feed' %}active{% endif %}">
+        <img src="{{ url_for('static', filename='images/icons/accueil.png') }}">
+    </a>
+
+    <a href="/quest" class="nav-item {% if request.path.startswith('/quest') %}active{% endif %}">
+        <img src="{{ url_for('static', filename='images/icons/quete.png') }}">
+    </a>
+
+    <a href="/create_post" class="nav-plus">
+        <img src="{{ url_for('static', filename='images/icons/plus.png') }}">
+    </a>
+
+    <a href="/friends" class="nav-item {% if request.path.startswith('/friends') %}active{% endif %}">
+        <img src="{{ url_for('static', filename='images/icons/amis.png') }}">
+    </a>
+
+    <a href="/messages" class="nav-item {% if request.path.startswith('/messages') %}active{% endif %}">
+        <img src="{{ url_for('static', filename='images/icons/message.svg') }}">
+    </a>
+
+    <a href="/profile" class="nav-item {% if request.path in ['/profile'] or request.path.startswith('/user/') %}active{% endif %}">
+        <img src="{{ url_for('static', filename='images/icons/profil.png') }}">
+    </a>
+
+</nav>

@@ -1,0 +1,78 @@
+{% extends "layout/base.html" %}
+{% from "components/icons.html" import back_arrow, heart, comment_bubble, people, bell, plus %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="notifications-page">
+
+    <div class="notif-topbar">
+        <a href="javascript:history.back()" class="back-btn">{{ back_arrow(20, "#FFD700") }}</a>
+        <h1>Notifications</h1>
+    </div>
+
+    {% if notifs|length == 0 %}
+
+    <div class="notif-empty">
+        {{ bell(40, "#555") }}
+        <p>Aucune notification pour l'instant</p>
+        <span>Les likes, commentaires et demandes d'amis apparaîtront ici.</span>
+    </div>
+
+    {% else %}
+
+    <div class="notif-list">
+
+    {% for n in notifs %}
+
+        {% set notif_id, ntype, post_id, is_read, created_at, actor_id, actor_pseudo, actor_photo = n %}
+
+        <a
+            href="{% if ntype in ['like','comment'] %}/comments/{{ post_id }}{% else %}/user/{{ actor_id }}{% endif %}"
+            class="notif-row {% if not is_read %}unread{% endif %}">
+
+            {% if actor_photo %}
+            <img src="{{ actor_photo }}" class="notif-avatar">
+            {% else %}
+            <div class="notif-avatar placeholder">{{ actor_pseudo[0]|upper }}</div>
+            {% endif %}
+
+            <span class="notif-type-icon">
+                {% if ntype == 'like' %}{{ heart(13, "#FF3B5C", filled=True) }}
+                {% elif ntype == 'comment' %}{{ comment_bubble(13, "#FFD700") }}
+                {% elif ntype == 'follow' %}{{ plus(13, "#FFD700") }}
+                {% else %}{{ people(13, "#FFD700") }}
+                {% endif %}
+            </span>
+
+            <div class="notif-text">
+
+                <p>
+                    <strong>{{ actor_pseudo }}</strong>
+
+                    {% if ntype == 'like' %} a aimé ta publication
+                    {% elif ntype == 'comment' %} a commenté ta publication
+                    {% elif ntype == 'friend_request' %} t'a envoyé une demande d'ami
+                    {% elif ntype == 'friend_accept' %} a accepté ta demande d'ami
+                    {% elif ntype == 'follow' %} a commencé à te suivre
+                    {% endif %}
+                </p>
+
+                <span class="notif-time">{{ created_at|time_ago }}</span>
+
+            </div>
+
+        </a>
+
+    {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

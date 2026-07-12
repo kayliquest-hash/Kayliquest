@@ -1,0 +1,76 @@
+{% extends "layout/base.html" %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/create_post.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="create-page">
+
+    <h1>Nouvelle quête</h1>
+    <p class="create-subtitle">Partage un moment avec ta guilde</p>
+
+    <form
+        method="POST"
+        enctype="multipart/form-data"
+        class="create-form"
+        id="create-form">
+
+        <div class="upload-zone">
+
+            <input
+                type="file"
+                id="media"
+                name="media"
+                accept="image/*,video/*"
+                hidden
+                required>
+
+            <label for="media" class="upload-card" id="upload-card">
+
+                <div class="upload-arrow">📸</div>
+                <h2>Ajouter un post</h2>
+                <p>Photo ou vidéo</p>
+                <span>Appuie ici pour sélectionner un fichier</span>
+
+            </label>
+
+            <div class="preview-wrapper" id="preview-wrapper" style="display:none;">
+
+                <img id="preview-img" style="display:none;">
+                <video id="preview-video" muted controls playsinline style="display:none;"></video>
+
+                <button type="button" id="preview-remove" class="preview-remove">✕</button>
+
+            </div>
+
+        </div>
+
+        <div class="description-wrapper">
+
+            <textarea
+                class="description-input"
+                name="description"
+                id="description"
+                placeholder="Écris quelque chose à propos de ton post..."
+                maxlength="500"
+                required></textarea>
+
+            <span class="char-counter"><span id="char-count">0</span>/500</span>
+
+        </div>
+
+        <button class="publish-btn" type="submit" id="publish-btn">
+            🚀 Publier le post
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/create_post.js') }}"></script>
+{% endblock %}

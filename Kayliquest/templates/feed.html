@@ -1,0 +1,163 @@
+{% extends "layout/base.html" %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/feed.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="search-bar">
+
+    <input
+        type="text"
+        class="search-input"
+        placeholder="Chercher un aventurier...">
+
+    <a href="/search" class="search-btn">
+        <img src="{{ url_for('static', filename='images/icons/recherche.png') }}">
+    </a>
+
+</div>
+
+<div class="feed">
+
+{% if posts|length == 0 %}
+
+<div class="empty-feed">
+    <img src="{{ url_for('static', filename='images/icons/quete.png') }}" class="empty-icon">
+    <h2>Aucune quête pour l'instant</h2>
+    <p>Sois le premier aventurier à publier !</p>
+    <a href="/create_post" class="empty-btn">Publier</a>
+</div>
+
+{% endif %}
+
+{% for post in posts %}
+
+<div class="post" data-post-id="{{ post[0] }}">
+
+    <div class="media-wrapper">
+
+    {% if post[2] %}
+
+        {% set extension = post[2].split('.')[-1].lower() %}
+
+        {% if extension in ['mp4','mov','webm'] %}
+
+        <video
+            class="post-media"
+            data-video
+            muted
+            loop
+            playsinline
+            preload="metadata">
+
+            <source src="{{ post[2] }}">
+
+        </video>
+
+        <div class="play-indicator">
+            <div class="play-triangle"></div>
+        </div>
+
+        {% else %}
+
+        <img
+            src="{{ post[2] }}"
+            class="post-media"
+            loading="lazy">
+
+        {% endif %}
+
+    {% endif %}
+
+    <div class="heart-burst"></div>
+
+    </div>
+
+    <div class="post-user">
+
+        <img
+        class="avatar-img"
+        src="{{ url_for('static', filename='uploads/' + post[6]) }}">
+
+        <div>
+
+            <h3>
+
+                <a href="/user/{{ post[1] }}">
+                    {{ post[5] }}
+                </a>
+
+            </h3>
+
+            <div class="player-rank">
+
+                Aventurier
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="side-buttons">
+
+        <button
+            class="action-btn like-btn"
+            data-like-btn
+            onclick="likePost({{ post[0] }}, this)">
+
+            <img src="{{ url_for('static', filename='images/icons/coeur.png') }}" class="action-icon">
+
+        </button>
+
+        <span
+            id="likes-{{ post[0] }}"
+            data-count="{{ post[7] }}">
+
+            {{ post[7]|format_count }}
+
+        </span>
+
+        <a
+            href="/comments/{{ post[0] }}"
+            class="action-btn">
+
+            <img src="{{ url_for('static', filename='images/icons/commentaire.png') }}" class="action-icon">
+
+        </a>
+
+        <span data-count="{{ post[8] }}">
+
+            {{ post[8]|format_count }}
+
+        </span>
+
+        <button class="action-btn" data-share-btn data-post-id="{{ post[0] }}">
+
+            <img src="{{ url_for('static', filename='images/icons/partage.png') }}" class="action-icon">
+
+        </button>
+
+    </div>
+
+    <div class="description">
+
+        <p class="caption" data-caption>{{ post[3] }}</p>
+
+        <small>{{ post[4]|format_count }} vues</small>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/feed.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,116 @@
+/* =========================================
+   KAYLI QUEST - NAVBAR
+========================================= */
+
+.bottom-nav{
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+
+    height:78px;
+
+    background:#0a0a0a;
+    border-top:1px solid #1a1a1a;
+
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-around;
+
+    padding-top:10px;
+
+    z-index:9999;
+}
+
+.nav-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+
+    text-decoration:none;
+
+    width:64px;
+}
+
+.nav-item img{
+    width:23px;
+    height:23px;
+    object-fit:contain;
+
+    opacity:0.45;
+    filter:grayscale(1) brightness(1.9);
+
+    transition:opacity 0.2s, filter 0.2s;
+}
+
+.nav-item span{
+    font-size:11px;
+    font-weight:600;
+    color:#777;
+
+    transition:color 0.2s;
+}
+
+.nav-item.active img{
+    opacity:1;
+    filter:none;
+}
+
+.nav-item.active span{
+    color:#FFD700;
+    font-weight:700;
+}
+
+.nav-item.active::after{
+    content:"";
+    display:block;
+    width:16px;
+    height:3px;
+    border-radius:3px;
+    background:#FFD700;
+    margin-top:2px;
+}
+
+.nav-item:active{
+    opacity:0.7;
+}
+
+/* Bouton central (+) */
+
+.nav-item-plus{
+    margin-top:-26px;
+}
+
+.nav-item-plus span:last-child{
+    color:#777;
+    margin-top:-2px;
+}
+
+.nav-plus{
+    width:50px;
+    height:50px;
+
+    border-radius:50%;
+
+    background:linear-gradient(145deg,#FFE45C,#FFD700 55%,#e6ac00);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    box-shadow:
+        0 6px 16px rgba(255,215,0,0.45),
+        inset 0 1px 1px rgba(255,255,255,0.5);
+}
+
+.nav-plus img{
+    width:20px;
+    height:20px;
+    opacity:1;
+    filter:none;
+}
+
+.nav-item-plus:active .nav-plus{
+    transform:scale(0.92);
+}

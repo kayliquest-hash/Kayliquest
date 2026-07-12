@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Environnements virtuels
+venv/
+env/
+.venv/
+
+# Variables d'environnement (ne JAMAIS pousser tes vraies clés sur GitHub)
+.env
+
+# Ancienne base SQLite (remplacée par PostgreSQL en production)
+database.db
+test_postgres_mock.db
+
+# Anciens fichiers uploadés localement (remplacés par Cloudinary)
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Divers
+.DS_Store
+*.log

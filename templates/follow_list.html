@@ -1,0 +1,53 @@
+{% extends "layout/base.html" %}
+{% from "components/icons.html" import back_arrow, lightning, people as people_icon %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/follow_list.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="follow-list-page">
+
+    <div class="follow-topbar">
+        <a href="javascript:history.back()" class="back-btn">{{ back_arrow(20, "#FFD700") }}</a>
+        <h1>{{ title }}</h1>
+    </div>
+
+    {% if people|length == 0 %}
+
+    <div class="follow-empty">
+        {{ people_icon(38, "#555") }}
+        <p>{{ empty_message }}</p>
+    </div>
+
+    {% else %}
+
+    <div class="follow-rows">
+
+    {% for person in people %}
+
+        <a href="/user/{{ person[0] }}" class="follow-row">
+
+            {% if person[2] %}
+            <img src="{{ person[2] }}" class="follow-avatar">
+            {% else %}
+            <div class="follow-avatar placeholder">{{ person[1][0]|upper }}</div>
+            {% endif %}
+
+            <div class="follow-info">
+                <h3>{{ person[1] }}</h3>
+                <span>{{ lightning(12, "#FFD700") }} Niveau {{ person[3] }}</span>
+            </div>
+
+        </a>
+
+    {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

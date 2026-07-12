@@ -1,0 +1,94 @@
+/* =========================================
+   KAYLI QUEST - ABONNÉS / ABONNEMENTS
+========================================= */
+
+.follow-list-page{
+    min-height:100vh;
+    background:#000;
+    padding-bottom:30px;
+}
+
+.follow-topbar{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    padding:18px 16px;
+    border-bottom:1px solid #1a1a1a;
+}
+
+.follow-topbar h1{
+    color:#FFD700;
+    font-size:18px;
+    font-weight:800;
+}
+
+.back-btn{
+    position:absolute;
+    left:16px;
+    display:flex;
+}
+
+.follow-rows{
+    padding:6px 10px;
+}
+
+.follow-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+
+    padding:11px 8px;
+    text-decoration:none;
+    border-radius:14px;
+}
+
+.follow-row:active{
+    background:#0f0f0f;
+}
+
+.follow-avatar{
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid #FFD700;
+    flex-shrink:0;
+}
+
+.follow-avatar.placeholder{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#1a1a1a;
+    color:#FFD700;
+    font-weight:800;
+}
+
+.follow-info h3{
+    color:white;
+    font-size:15px;
+    font-weight:700;
+}
+
+.follow-info span{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    color:#FFD700;
+    font-size:12px;
+    font-weight:600;
+    margin-top:2px;
+}
+
+.follow-empty{
+    text-align:center;
+    margin-top:100px;
+    padding:0 30px;
+}
+
+.follow-empty p{
+    color:#999;
+    margin-top:14px;
+}

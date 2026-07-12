@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+    <title>Kayli Quest</title>
+
+    {% include "layout/head.html" %}
+
+    {% block css %}{% endblock %}
+
+</head>
+
+<body class="{% if request.endpoint in ['conversation', 'comments'] %}no-pad{% endif %}">
+
+{% block content %}{% endblock %}
+
+{% if request.endpoint not in ['home', 'login', 'register', 'conversation', 'comments'] %}
+    {% include "layout/navbar.html" %}
+{% endif %}
+
+{% block scripts %}{% endblock %}
+
+</body>
+
+</html>

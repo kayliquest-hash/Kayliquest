@@ -1,0 +1,361 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Montserrat',sans-serif;
+}
+
+body{
+    background:#000;
+    color:white;
+    height:100vh;
+    overflow-y:auto;
+    position:relative;
+    padding-bottom:80px;
+}
+
+body.no-pad{
+    padding-bottom:0;
+    overflow:hidden;
+}
+
+/* Header */
+
+header{
+    display:flex;
+    justify-content:flex-end;
+
+    padding:12px 18px;
+
+    position:relative;
+    z-index:2;
+}
+
+.login-btn{
+    text-decoration:none;
+
+    color:#FFD700;
+
+    border:2px solid #FFD700;
+
+    padding:10px 18px;
+
+    border-radius:15px;
+
+    font-weight:600;
+
+    font-size:16px;
+}
+
+/* Contenu principal */
+
+.container{
+    position:relative;
+    z-index:2;
+
+    height:calc(100vh - 60px);
+
+    display:flex;
+    flex-direction:column;
+
+    justify-content:flex-start;
+    align-items:center;
+
+    text-align:center;
+
+    gap:12px;
+
+    padding:5px 15px;
+}
+
+/* Logo */
+
+.logo{
+    width:100px;
+    margin-top:10px;
+}
+
+/* Titre */
+
+h1{
+    color:#FFD700;
+
+    font-size:42px;
+
+    font-weight:900;
+
+    line-height:1;
+
+    letter-spacing:4px;
+}
+
+h1 span{
+    display:block;
+
+    font-size:18px;
+
+    letter-spacing:8px;
+
+    margin-top:8px;
+}
+
+/* Slogan */
+
+.slogan{
+    font-size:12px;
+
+    font-weight:300;
+
+    letter-spacing:3px;
+
+    max-width:280px;
+
+    margin-bottom:20px;
+}
+
+/* Boutons */
+
+.main-btn{
+    width:220px;
+    height:50px;
+
+    background:#FFD700;
+
+    color:#000;
+
+    border:none;
+
+    border-radius:18px;
+
+    font-size:16px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:0.3s;
+}
+
+.main-btn:hover{
+    transform:scale(1.05);
+}
+
+.second-btn{
+    width:220px;
+    height:50px;
+
+    background:transparent;
+
+    color:#FFD700;
+
+    border:2px solid #FFD700;
+
+    border-radius:18px;
+
+    font-size:16px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:0.3s;
+}
+
+.second-btn:hover{
+    transform:scale(1.05);
+}
+
+/* Responsive PC */
+
+@media (min-width:768px){
+
+    .logo{
+        width:130px;
+    }
+
+    h1{
+        font-size:55px;
+    }
+
+    h1 span{
+        font-size:24px;
+    }
+
+    .slogan{
+        font-size:14px;
+    }
+
+    .main-btn,
+    .second-btn{
+        width:260px;
+        height:55px;
+    }
+
+    body::before,
+    body::after{
+        width:120px;
+        height:120px;
+    }
+}
+
+.actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:10px;
+}
+
+.like-btn{
+    text-decoration:none;
+    font-size:28px;
+}
+
+.like-count{
+    color:white;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.stats-box{
+    width:90%;
+    margin:25px auto;
+
+    display:flex;
+    justify-content:space-around;
+
+    background:#111;
+
+    border:2px solid #FFD700;
+
+    border-radius:25px;
+
+    padding:20px;
+}
+
+.stat{
+    text-align:center;
+}
+
+.stat h2{
+    color:#FFD700;
+    font-size:28px;
+}
+
+.stat p{
+    color:white;
+    font-size:13px;
+}
+
+/* PAGE AMIS */
+
+.friends-page{
+
+    min-height:100vh;
+
+    background:black;
+
+    padding:25px;
+
+}
+
+.friends-title{
+
+    text-align:center;
+
+    color:#FFD700;
+
+    font-size:38px;
+
+    margin-bottom:30px;
+
+}
+
+.friend-card{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:15px;
+
+    background:#111;
+
+    border:2px solid #FFD700;
+
+    border-radius:25px;
+
+    padding:15px;
+
+    margin-bottom:20px;
+
+}
+
+.friend-avatar{
+
+    width:70px;
+
+    height:70px;
+
+    border-radius:50%;
+
+    object-fit:cover;
+
+    border:3px solid #FFD700;
+
+}
+
+.friend-info{
+
+    flex:1;
+
+}
+
+.friend-info h3{
+
+    color:#FFD700;
+
+    font-size:22px;
+
+}
+
+.friend-info p{
+
+    color:#aaa;
+
+    margin-top:5px;
+
+}
+
+.accept-btn{
+
+    background:#FFD700;
+
+    color:black;
+
+    text-decoration:none;
+
+    padding:12px 20px;
+
+    border-radius:20px;
+
+    font-weight:bold;
+
+}
+
+.empty-friends{
+
+    text-align:center;
+
+    margin-top:150px;
+
+}
+
+.empty-friends p{
+
+    color:#FFD700;
+
+    font-size:20px;
+
+    margin-top:15px;
+
+}

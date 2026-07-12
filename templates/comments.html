@@ -1,0 +1,81 @@
+{% extends "layout/base.html" %}
+
+{% from "components/icons.html" import back_arrow %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="comments-page">
+
+    <div class="comments-topbar">
+
+        <a href="javascript:history.back()" class="back-btn">{{ back_arrow(20, "#FFD700") }}</a>
+
+        <h1>Commentaires</h1>
+
+    </div>
+
+    <div class="comments-container">
+
+        {% if commentaires|length == 0 %}
+
+        <div class="comments-empty">
+            <p>Aucun commentaire pour l'instant.</p>
+            <p class="comments-empty-sub">Sois le premier à réagir !</p>
+        </div>
+
+        {% endif %}
+
+        {% for commentaire in commentaires %}
+
+        <div class="comment">
+
+            {% if commentaire[2] %}
+            <img
+                src="{{ commentaire[2] }}"
+                class="comment-avatar">
+            {% else %}
+            <div class="comment-avatar placeholder">{{ commentaire[1][0]|upper }}</div>
+            {% endif %}
+
+            <div class="comment-content">
+
+                <a href="/user/{{ commentaire[3] }}" class="comment-user">{{ commentaire[1] }}</a>
+
+                <p class="comment-text">{{ commentaire[0] }}</p>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    <form
+        action="/add_comment/{{ post_id }}"
+        method="POST"
+        class="comment-form">
+
+        <input
+            type="text"
+            name="commentaire"
+            placeholder="Ajouter un commentaire..."
+            autocomplete="off"
+            required>
+
+        <button type="submit" class="send-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

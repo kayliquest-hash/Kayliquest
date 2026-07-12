@@ -1,0 +1,51 @@
+{% extends "layout/base.html" %}
+
+{% block css %}
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+    <title>Kayli Quest</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet"
+href="{{ url_for('static', filename='css/base.css') }}">
+</head>
+
+<body>
+
+{% block content %}
+
+<header>
+    <a href="/login" class="login-btn">Connexion</a>
+</header>
+
+<div class="container">
+
+    <img src="{{ url_for('static', filename='images/logo/logo.png') }}" class="logo" alt="Kayli Quest">
+
+    <h1>
+        KAYLI
+        <span>QUEST</span>
+    </h1>
+
+    <p class="slogan">
+        CHAQUE JOUR UNE NOUVELLE QUÊTE
+    </p>
+
+    <a href="/login">
+        <button class="main-btn">
+            COMMENCER
+        </button>
+    </a>
+
+    <a href="/register">
+        <button class="second-btn">
+            CRÉER UN COMPTE
+        </button>
+    </a>
+
+</div>
+
+{% endblock %}

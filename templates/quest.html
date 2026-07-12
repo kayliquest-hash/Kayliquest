@@ -1,0 +1,116 @@
+{% extends "layout/base.html" %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/quest.css') }}">
+{% endblock %}
+
+{% from "components/icons.html" import camera, heart, comment_bubble, people, eye, check %}
+
+{% macro quest_card(q) %}
+
+<div class="quest-card {% if q.claimed %}claimed{% elif q.completed %}ready{% endif %}"
+     data-quest-id="{{ q.id }}">
+
+    <div class="quest-icon">
+        {% if q.type == 'post' %}{{ camera(26, "#FFD700") }}
+        {% elif q.type == 'like' %}{{ heart(26, "#FFD700") }}
+        {% elif q.type == 'comment' %}{{ comment_bubble(24, "#FFD700") }}
+        {% elif q.type == 'friend' %}{{ people(24, "#FFD700") }}
+        {% elif q.type == 'view' %}{{ eye(24, "#FFD700") }}
+        {% endif %}
+    </div>
+
+    <div class="quest-info">
+
+        <h3>{{ q.title }}</h3>
+        <p>{{ q.description }}</p>
+
+        <div class="quest-progress-bar">
+            <div class="quest-progress-fill"
+                 style="width:{{ (q.progress / q.target * 100) | round(0, 'floor') }}%"></div>
+        </div>
+
+        <span class="quest-progress-label">{{ q.progress }} / {{ q.target }}</span>
+
+    </div>
+
+    <div class="quest-action">
+
+        <span class="quest-xp">+{{ q.xp_reward }} XP</span>
+
+        {% if q.claimed %}
+
+        <button class="quest-btn done" disabled>{{ check(13, "#4caf50") }} Fait</button>
+
+        {% elif q.completed %}
+
+        <button class="quest-btn claim" onclick="claimQuest({{ q.id }}, this)">Réclamer</button>
+
+        {% else %}
+
+        <button class="quest-btn locked" disabled>En cours</button>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endmacro %}
+
+{% block content %}
+
+<div class="quest-page">
+
+    <div class="quest-header">
+
+        <h1>Quêtes</h1>
+
+        <div class="level-card">
+
+            <div class="level-badge">Niv. {{ niveau }}</div>
+
+            <div class="xp-bar">
+                <div class="xp-fill" style="width:{{ xp }}%"></div>
+            </div>
+
+            <div class="xp-label">{{ xp }} / 100 XP</div>
+
+        </div>
+
+        <div class="quest-stats">
+            <div class="quest-stat">
+                <h2>{{ quetes }}</h2>
+                <p>Quêtes accomplies</p>
+            </div>
+        </div>
+
+    </div>
+
+    <h2 class="quest-section-title">Quêtes du jour</h2>
+
+    <div class="quest-list">
+        {% for q in daily_quests %}
+        {{ quest_card(q) }}
+        {% endfor %}
+    </div>
+
+    <p class="quest-refresh-note">Se renouvellent chaque jour à minuit.</p>
+
+    <h2 class="quest-section-title">Quêtes de la semaine</h2>
+
+    <div class="quest-list">
+        {% for q in weekly_quests %}
+        {{ quest_card(q) }}
+        {% endfor %}
+    </div>
+
+    <p class="quest-refresh-note">Se renouvellent chaque lundi — récompenses plus généreuses !</p>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/quest.js') }}"></script>
+{% endblock %}

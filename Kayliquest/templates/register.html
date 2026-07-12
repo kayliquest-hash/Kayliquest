@@ -1,0 +1,230 @@
+{% extends "layout/base.html" %}
+
+{% block css %}
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+<title>Inscription - Kayli Quest</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700;900&display=swap" rel="stylesheet">
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/auth.css') }}">
+
+{% block content %}
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Montserrat',sans-serif;
+}
+
+body{
+    background:#000;
+    color:white;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    position:relative;
+    overflow-x:hidden;
+}
+
+body::before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    width:90px;
+    height:90px;
+    background:#FFD700;
+    clip-path:polygon(0 0,100% 0,0 100%);
+}
+
+body::after{
+    content:"";
+    position:absolute;
+    bottom:0;
+    right:0;
+    width:90px;
+    height:90px;
+    background:#FFD700;
+    clip-path:polygon(100% 0,100% 100%,0 100%);
+}
+
+.container{
+    width:90%;
+    max-width:420px;
+    text-align:center;
+}
+
+.logo{
+    width:110px;
+    margin-bottom:20px;
+}
+
+h1{
+    color:#FFD700;
+    margin-bottom:25px;
+}
+
+.erreur{
+    background:rgba(255,0,0,0.15);
+    border:2px solid #ff4444;
+    color:#ff4444;
+
+    padding:12px;
+    margin-bottom:20px;
+
+    border-radius:15px;
+
+    font-weight:bold;
+
+    animation:apparition 0.3s ease;
+}
+
+@keyframes apparition{
+
+    from{
+        opacity:0;
+        transform:translateY(-10px);
+    }
+
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+
+}
+
+input,
+textarea{
+    width:100%;
+
+    padding:15px;
+
+    margin-bottom:15px;
+
+    border:2px solid #FFD700;
+
+    border-radius:15px;
+
+    background:black;
+
+    color:white;
+
+    font-size:15px;
+}
+
+textarea{
+    min-height:100px;
+    resize:none;
+}
+
+input[type="file"]{
+    cursor:pointer;
+}
+
+button{
+    width:100%;
+
+    padding:15px;
+
+    border:none;
+
+    border-radius:15px;
+
+    background:#FFD700;
+
+    color:black;
+
+    font-size:18px;
+
+    font-weight:bold;
+
+    cursor:pointer;
+}
+
+button:hover{
+    transform:scale(1.02);
+}
+
+.login-link{
+    display:block;
+    margin-top:20px;
+    color:#FFD700;
+    text-decoration:none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <img
+        src="{{ url_for('static', filename='images/logo/logo.png') }}"
+        class="logo"
+    >
+
+    <h1>INSCRIPTION</h1>
+
+    {% if erreur %}
+    <div class="erreur">
+        {{ erreur }}
+    </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+
+        <input
+            type="text"
+            name="pseudo"
+            placeholder="Pseudo"
+            required
+        >
+
+        <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            required
+        >
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Mot de passe"
+            required
+        >
+
+        <textarea
+            name="bio"
+            placeholder="Ta bio"
+        ></textarea>
+
+        <input
+            type="file"
+            name="photo"
+            required
+        >
+
+        <button type="submit">
+            CRÉER MON COMPTE
+        </button>
+
+    </form>
+
+    <a href="/login" class="login-link">
+        Déjà un compte ? Se connecter
+    </a>
+
+</div>
+
+{% endblock %}

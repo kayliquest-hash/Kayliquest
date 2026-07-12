@@ -1,0 +1,282 @@
+{% extends "layout/base.html" %}
+{% from "components/icons.html" import bell, search, heart, comment_bubble, bookmark, share, dots_vertical, chevron_down, lightning, speaker_on, speaker_off %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/feed.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="feed-header">
+
+    <a href="/notifications" class="header-icon-btn" title="Notifications">
+        {{ bell(22, "#e8e8e8") }}
+        {% if unread_notif_count > 0 %}
+        <span class="notif-dot"></span>
+        {% endif %}
+    </a>
+
+    <h1 class="feed-logo">KAYLI<span>QUEST</span></h1>
+
+    <a href="/search" class="header-icon-btn search-btn" title="Rechercher">
+        {{ search(19, "#000") }}
+    </a>
+
+</div>
+
+<div class="feed-tabs">
+    <button class="feed-tab active" data-feed-tab="posts">Posts</button>
+    <button class="feed-tab" data-feed-tab="kayli">Kayli</button>
+</div>
+
+<!-- ============ ONGLET POSTS (photos) ============ -->
+
+<div class="feed-panel" data-feed-panel="posts">
+
+<div class="feed">
+
+{% if posts|length == 0 %}
+
+<div class="empty-feed">
+    <img src="{{ url_for('static', filename='images/icons/quete.png') }}" class="empty-icon">
+    <h2>Aucune publication pour l'instant</h2>
+    <p>Sois le premier aventurier à publier une photo !</p>
+    <a href="/create_post" class="empty-btn">Publier</a>
+</div>
+
+{% endif %}
+
+{% for item in posts %}
+
+{% set post = item.row %}
+{% set last_comment = item.last_comment %}
+
+<div class="post-card" data-post-id="{{ post[0] }}">
+
+    <div class="card-header">
+
+        <a href="/user/{{ post[1] }}">
+
+            {% if post[6] %}
+            <img src="{{ post[6] }}" class="card-avatar">
+            {% else %}
+            <div class="card-avatar placeholder">{{ post[5][0]|upper }}</div>
+            {% endif %}
+
+        </a>
+
+        <div class="card-user-info">
+
+            <a href="/user/{{ post[1] }}" class="card-username">{{ post[5] }}</a>
+
+            <span class="card-level">{{ lightning(12, "#FFD700") }} Niveau {{ post[7] }}</span>
+
+        </div>
+
+        <button class="card-menu-btn">{{ dots_vertical(20, "#888") }}</button>
+
+    </div>
+
+    {% if post[3] %}
+    <p class="card-caption" data-caption>{{ post[3] }}</p>
+    {% endif %}
+
+    <div class="card-media">
+
+        {% if post[2] %}
+        <img src="{{ post[2] }}" loading="lazy">
+        {% endif %}
+
+        <div class="heart-burst"></div>
+
+    </div>
+
+    <div class="card-actions">
+
+        <button
+            class="act-btn act-like {% if post[10] %}liked{% endif %}"
+            data-like-btn
+            data-liked="{{ 1 if post[10] else 0 }}"
+            onclick="likePost({{ post[0] }}, this)">
+
+            <span class="icon-outline">{{ heart(23, "#e8e8e8") }}</span>
+            <span class="icon-filled">{{ heart(23, "#FF3B5C", filled=True) }}</span>
+
+        </button>
+
+        <span class="act-count" id="likes-{{ post[0] }}">{{ post[8]|format_count }}</span>
+
+        <a href="/comments/{{ post[0] }}" class="act-btn">
+            {{ comment_bubble(22, "#e8e8e8") }}
+        </a>
+
+        <span class="act-count">{{ post[9]|format_count }}</span>
+
+        <div class="act-spacer"></div>
+
+        <button
+            class="act-btn act-save {% if item.is_saved %}saved{% endif %}"
+            data-save-btn
+            data-saved="{{ 1 if item.is_saved else 0 }}"
+            onclick="savePost({{ post[0] }}, this)">
+
+            <span class="icon-outline">{{ bookmark(22, "#e8e8e8") }}</span>
+            <span class="icon-filled">{{ bookmark(22, "#FFD700", filled=True) }}</span>
+
+        </button>
+
+        <button class="act-btn" data-share-btn data-post-id="{{ post[0] }}">{{ share(21, "#e8e8e8") }}</button>
+
+    </div>
+
+    {% if last_comment %}
+
+    <div class="card-comment-preview">
+
+        <p>
+            <a href="/comments/{{ post[0] }}" class="preview-user">{{ last_comment[1] }}</a>
+            {{ last_comment[0] }}
+        </p>
+
+        <div class="preview-meta">
+            <span>{{ last_comment[2]|time_ago }}</span>
+            <a href="/comments/{{ post[0] }}">Répondre</a>
+        </div>
+
+    </div>
+
+    {% endif %}
+
+    {% if post[9] > 1 %}
+
+    <a href="/comments/{{ post[0] }}" class="see-more-comments">
+        Voir {{ post[9] - 1 }} autre{{ 's' if post[9] - 1 > 1 else '' }} commentaire{{ 's' if post[9] - 1 > 1 else '' }}
+        {{ chevron_down(14, "#999") }}
+    </a>
+
+    {% endif %}
+
+    <small class="card-views">{{ post[4]|format_count }} vues</small>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+
+<!-- ============ ONGLET KAYLI (vidéos verticales) ============ -->
+
+<div class="feed-panel" data-feed-panel="kayli" hidden>
+
+<div class="kayli-scroll" id="kayli-scroll">
+
+{% if videos|length == 0 %}
+
+<div class="empty-feed kayli-empty">
+    <img src="{{ url_for('static', filename='images/icons/quete.png') }}" class="empty-icon">
+    <h2>Aucune vidéo pour l'instant</h2>
+    <p>Publie une vidéo courte pour lancer le Kayli !</p>
+    <a href="/create_post" class="empty-btn">Publier</a>
+</div>
+
+{% endif %}
+
+{% for item in videos %}
+
+{% set post = item.row %}
+
+<div class="kayli-post" data-post-id="{{ post[0] }}">
+
+    <div class="kayli-media-wrapper">
+
+        <video data-kayli-video muted loop playsinline preload="metadata">
+            <source src="{{ post[2] }}">
+        </video>
+
+        <div class="kayli-play-indicator">
+            <div class="kayli-play-triangle"></div>
+        </div>
+
+        <div class="heart-burst"></div>
+
+    </div>
+
+    <button class="kayli-mute-btn is-muted" data-mute-btn onclick="toggleKayliMute(event, this)">
+        <span class="icon-muted">{{ speaker_off(18, "#fff") }}</span>
+        <span class="icon-unmuted">{{ speaker_on(18, "#fff") }}</span>
+    </button>
+
+    <div class="kayli-gradient"></div>
+
+    <div class="kayli-user">
+
+        <a href="/user/{{ post[1] }}">
+
+            {% if post[6] %}
+            <img src="{{ post[6] }}" class="kayli-avatar">
+            {% else %}
+            <div class="kayli-avatar placeholder">{{ post[5][0]|upper }}</div>
+            {% endif %}
+
+        </a>
+
+        <div>
+            <a href="/user/{{ post[1] }}" class="kayli-username">{{ post[5] }}</a>
+            <span class="kayli-level">{{ lightning(11, "#FFD700") }} Niveau {{ post[7] }}</span>
+        </div>
+
+    </div>
+
+    <div class="kayli-side-buttons">
+
+        <button
+            class="act-btn act-like {% if post[10] %}liked{% endif %}"
+            data-like-btn
+            data-liked="{{ 1 if post[10] else 0 }}"
+            onclick="likePost({{ post[0] }}, this)">
+
+            <span class="icon-outline">{{ heart(30, "#fff") }}</span>
+            <span class="icon-filled">{{ heart(30, "#FF3B5C", filled=True) }}</span>
+
+        </button>
+        <span class="kayli-count" id="likes-{{ post[0] }}">{{ post[8]|format_count }}</span>
+
+        <a href="/comments/{{ post[0] }}" class="act-btn">
+            {{ comment_bubble(28, "#fff") }}
+        </a>
+        <span class="kayli-count">{{ post[9]|format_count }}</span>
+
+        <button
+            class="act-btn act-save {% if item.is_saved %}saved{% endif %}"
+            data-save-btn
+            data-saved="{{ 1 if item.is_saved else 0 }}"
+            onclick="savePost({{ post[0] }}, this)">
+
+            <span class="icon-outline">{{ bookmark(27, "#fff") }}</span>
+            <span class="icon-filled">{{ bookmark(27, "#FFD700", filled=True) }}</span>
+
+        </button>
+
+        <button class="act-btn" data-share-btn data-post-id="{{ post[0] }}">{{ share(26, "#fff") }}</button>
+
+    </div>
+
+    {% if post[3] %}
+    <p class="kayli-caption" data-caption>{{ post[3] }}</p>
+    {% endif %}
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/feed.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "layout/base.html" %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/messages.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="chat-page">
+
+    <div class="chat-header">
+
+        <a href="/messages" class="chat-back">←</a>
+
+        {% if other_user[2] %}
+        <img src="{{ url_for('static', filename='uploads/' + other_user[2]) }}" class="chat-avatar">
+        {% else %}
+        <div class="chat-avatar placeholder">{{ other_user[1][0]|upper }}</div>
+        {% endif %}
+
+        <a href="/user/{{ other_user[0] }}" class="chat-pseudo">{{ other_user[1] }}</a>
+
+    </div>
+
+    <div class="chat-messages" id="chat-messages" data-conversation-id="{{ conversation_id }}">
+
+        {% if messages|length == 0 %}
+
+        <div class="chat-empty">
+            <p>Envoie le premier message à {{ other_user[1] }} !</p>
+        </div>
+
+        {% endif %}
+
+        {% for m in messages %}
+
+        <div class="msg-row {% if m[1] == session['user_id'] %}mine{% else %}theirs{% endif %}" data-msg-id="{{ m[0] }}">
+            <div class="msg-bubble">{{ m[2] }}</div>
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    <form class="chat-input-bar" id="chat-form" method="POST">
+
+        <input
+            type="text"
+            name="content"
+            id="chat-input"
+            placeholder="Écris un message..."
+            autocomplete="off"
+            required>
+
+        <button type="submit" class="send-btn">
+            <img src="{{ url_for('static', filename='images/icons/partage.png') }}">
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const CURRENT_USER_ID = {{ session['user_id'] }};
+</script>
+<script src="{{ url_for('static', filename='js/messages.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "layout/base.html" %}
+{% from "components/icons.html" import people, envelope, lightning %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/friends.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="friends-page">
+
+    <h1 class="friends-title">Amis</h1>
+
+    {% if nb_demandes > 0 %}
+
+    <h2 class="section-title">Demandes ({{ nb_demandes }})</h2>
+
+    <div class="requests-list">
+
+    {% for demande in demandes %}
+
+        <div class="friend-card">
+
+            {% if demande[3] %}
+            <img src="{{ demande[3] }}" class="friend-avatar">
+            {% else %}
+            <div class="friend-avatar placeholder">{{ demande[2][0]|upper }}</div>
+            {% endif %}
+
+            <div class="friend-info">
+                <h3>{{ demande[2] }}</h3>
+                <p>Veut devenir ton ami</p>
+            </div>
+
+            <a href="/accept_friend/{{ demande[0] }}" class="accept-btn">Accepter</a>
+
+        </div>
+
+    {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+    <h2 class="section-title">Mes amis ({{ amis|length }})</h2>
+
+    {% if amis|length == 0 %}
+
+    <div class="empty-friends">
+        {{ people(38, "#555") }}
+        <p>Aucun ami pour l'instant</p>
+        <span class="empty-sub">Va explorer le feed pour rencontrer d'autres aventuriers.</span>
+    </div>
+
+    {% else %}
+
+    <div class="ami-list">
+
+    {% for ami in amis %}
+
+        <div class="ami-row">
+
+            <a href="/user/{{ ami[0] }}" class="ami-link">
+
+                {% if ami[2] %}
+                <img src="{{ ami[2] }}" class="friend-avatar">
+                {% else %}
+                <div class="friend-avatar placeholder">{{ ami[1][0]|upper }}</div>
+                {% endif %}
+
+                <div class="friend-info">
+                    <h3>{{ ami[1] }}</h3>
+                    <span class="ami-level">{{ lightning(12, "#FFD700") }} Niveau {{ ami[3] }}</span>
+                </div>
+
+            </a>
+
+            <a href="/messages/{{ ami[0] }}" class="message-btn" title="Envoyer un message">
+                {{ envelope(19, "#000") }}
+            </a>
+
+        </div>
+
+    {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
