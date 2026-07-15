@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, redirect, session
-import sqlite3
+from flask import Flask, render_template, request, redirect, session, g
+import psycopg2
 import os
+from functools import wraps
 from datetime import date, datetime, timedelta
 from flask import jsonify
 import cloudinary
@@ -13,16 +14,33 @@ app = Flask(
     template_folder=os.path.join(BASE_DIR, "templates"),
     static_folder=os.path.join(BASE_DIR, "static")
 )
-app.secret_key = "kayliquest2026"
+
+app.secret_key = os.environ.get("SECRET_KEY", "kayliquest2026")
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+
 cloudinary.config(
-    cloud_name="tx3qtpcx",
-    api_key="138818719392132",                            api_secret="RBOQtknn9AwKpI2doJeEjo2OgiQ",
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
     secure=True
 )
 
-UPLOAD_FOLDER = "static/uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# -------------------------
+# Connexion PostgreSQL
+# -------------------------
+# DATABASE_URL est fournie automatiquement par Render (ou par ton
+# fournisseur Postgres, ex: Neon, Supabase) sous la forme :
+# postgresql://user:password@host:port/dbname
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
+if DATABASE_URL.startswith("postgres://"):
+    # Certains fournisseurs (ex: anciennes URLs Heroku-style) utilisent
+    # "postgres://" alors que psycopg2 attend "postgresql://"
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+def get_db():
+    return psycopg2.connect(DATABASE_URL)
 
 @app.template_filter("time_ago")
 def time_ago(value):
@@ -72,13 +90,12 @@ def test():
 
 def init_db():
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
-    
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         pseudo TEXT,
         email TEXT,
         password TEXT,
@@ -86,53 +103,46 @@ def init_db():
         photo TEXT,
         xp INTEGER DEFAULT 0,
         niveau INTEGER DEFAULT 1,
-        quetes INTEGER DEFAULT 0
+        quetes INTEGER DEFAULT 0,
+        is_admin INTEGER DEFAULT 0,
+        is_banned INTEGER DEFAULT 0
     )
     """)
 
+    cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin INTEGER DEFAULT 0")
+    cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned INTEGER DEFAULT 0")
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS posts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER,
         image TEXT,
         description TEXT,
         views INTEGER DEFAULT 0
     )
     """)
-    
-    try:
-        cursor.execute("""
-        ALTER TABLE posts
-        ADD COLUMN views INTEGER DEFAULT 0
-        """)
-    except:
-        pass
-    
+
     cursor.execute("""
 CREATE TABLE IF NOT EXISTS likes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     user_id INTEGER,
     post_id INTEGER
    )
    """)
-   
+
     cursor.execute("""
 CREATE TABLE IF NOT EXISTS comments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     user_id INTEGER,
     post_id INTEGER,
-    commentaire TEXT
+    commentaire TEXT,
+    created_at TEXT
     )
     """)
 
-    try:
-        cursor.execute("ALTER TABLE comments ADD COLUMN created_at TEXT")
-    except sqlite3.OperationalError:
-        pass
-
     cursor.execute("""
 CREATE TABLE IF NOT EXISTS friends (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     sender_id INTEGER,
     receiver_id INTEGER,
     status TEXT DEFAULT 'pending'
@@ -141,25 +151,21 @@ CREATE TABLE IF NOT EXISTS friends (
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS quests (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         code TEXT UNIQUE,
         title TEXT,
         description TEXT,
         type TEXT,
         target INTEGER,
         xp_reward INTEGER,
-        icon TEXT
+        icon TEXT,
+        frequency TEXT DEFAULT 'daily'
     )
     """)
 
-    try:
-        cursor.execute("ALTER TABLE quests ADD COLUMN frequency TEXT DEFAULT 'daily'")
-    except sqlite3.OperationalError:
-        pass
-
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS quest_progress (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER,
         quest_id INTEGER,
         date TEXT,
@@ -171,7 +177,7 @@ CREATE TABLE IF NOT EXISTS friends (
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS notifications (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER,
         actor_id INTEGER,
         type TEXT,
@@ -183,7 +189,7 @@ CREATE TABLE IF NOT EXISTS friends (
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS saved_posts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER,
         post_id INTEGER,
         created_at TEXT,
@@ -193,7 +199,7 @@ CREATE TABLE IF NOT EXISTS friends (
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS follows (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         follower_id INTEGER,
         following_id INTEGER,
         created_at TEXT,
@@ -203,7 +209,7 @@ CREATE TABLE IF NOT EXISTS friends (
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS conversations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user1_id INTEGER,
         user2_id INTEGER,
         created_at TEXT
@@ -212,7 +218,7 @@ CREATE TABLE IF NOT EXISTS friends (
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         conversation_id INTEGER,
         sender_id INTEGER,
         content TEXT,
@@ -235,15 +241,74 @@ CREATE TABLE IF NOT EXISTS friends (
     ]
 
     cursor.executemany("""
-    INSERT OR IGNORE INTO quests
+    INSERT INTO quests
     (code, title, description, type, target, xp_reward, icon, frequency)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    ON CONFLICT (code) DO NOTHING
     """, default_quests)
 
     conn.commit()
     conn.close()
 
 init_db()
+
+# -------------------------
+# Helpers - Administration
+# -------------------------
+
+def admin_required(f):
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+
+        if "user_id" not in session:
+            return redirect("/login")
+
+        if not getattr(g, "viewer_is_admin", False):
+            return redirect("/feed")
+
+        return f(*args, **kwargs)
+
+    return wrapper
+
+@app.before_request
+def load_current_user_status():
+
+    g.viewer_is_admin = False
+
+    if "user_id" not in session:
+        return
+
+    if request.endpoint in ("static", "logout"):
+        return
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT is_admin, is_banned FROM users WHERE id=%s",
+        (session["user_id"],)
+    )
+    row = cursor.fetchone()
+
+    conn.close()
+
+    if not row:
+        # compte supprimé entre-temps
+        session.clear()
+        return
+
+    admin_flag, banned_flag = row
+
+    if banned_flag:
+        session.clear()
+        return redirect("/login?banned=1")
+
+    g.viewer_is_admin = bool(admin_flag)
+
+@app.context_processor
+def inject_admin_status():
+    return {"viewer_is_admin": getattr(g, "viewer_is_admin", False)}
 
 # -------------------------
 # Helpers - Quêtes
@@ -263,7 +328,7 @@ def get_or_create_progress(cursor, user_id, quest_id, period):
     cursor.execute("""
     SELECT id, progress, completed, claimed
     FROM quest_progress
-    WHERE user_id=? AND quest_id=? AND date=?
+    WHERE user_id=%s AND quest_id=%s AND date=%s
     """, (user_id, quest_id, period))
 
     row = cursor.fetchone()
@@ -274,21 +339,24 @@ def get_or_create_progress(cursor, user_id, quest_id, period):
     cursor.execute("""
     INSERT INTO quest_progress
     (user_id, quest_id, date, progress, completed, claimed)
-    VALUES (?, ?, ?, 0, 0, 0)
+    VALUES (%s, %s, %s, 0, 0, 0)
+    RETURNING id
     """, (user_id, quest_id, period))
 
-    return (cursor.lastrowid, 0, 0, 0)
+    new_id = cursor.fetchone()[0]
+
+    return (new_id, 0, 0, 0)
 
 def bump_quest_progress(user_id, quest_type, amount=1):
 
     if not user_id:
         return
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, target, frequency FROM quests WHERE type=?",
+        "SELECT id, target, frequency FROM quests WHERE type=%s",
         (quest_type,)
     )
 
@@ -310,8 +378,8 @@ def bump_quest_progress(user_id, quest_type, amount=1):
 
         cursor.execute("""
         UPDATE quest_progress
-        SET progress=?, completed=?
-        WHERE id=?
+        SET progress=%s, completed=%s
+        WHERE id=%s
         """, (min(progress, target), completed_now, prog_id))
 
     conn.commit()
@@ -323,12 +391,15 @@ def inject_unread_notifications():
     if "user_id" not in session:
         return {"unread_notif_count": 0}
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
+    cursor = conn.cursor()
 
-    count = conn.execute("""
+    cursor.execute("""
     SELECT COUNT(*) FROM notifications
-    WHERE user_id=? AND is_read=0
-    """, (session["user_id"],)).fetchone()[0]
+    WHERE user_id=%s AND is_read=0
+    """, (session["user_id"],))
+
+    count = cursor.fetchone()[0]
 
     conn.close()
 
@@ -343,13 +414,13 @@ def create_notification(user_id, actor_id, notif_type, post_id=None):
     if not user_id or not actor_id or user_id == actor_id:
         return
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     INSERT INTO notifications
     (user_id, actor_id, type, post_id, is_read, created_at)
-    VALUES (?, ?, ?, ?, 0, ?)
+    VALUES (%s, %s, %s, %s, 0, %s)
     """, (
         user_id,
         actor_id,
@@ -371,7 +442,7 @@ def get_or_create_conversation(cursor, conn, user_a, user_b):
 
     cursor.execute("""
     SELECT id FROM conversations
-    WHERE user1_id=? AND user2_id=?
+    WHERE user1_id=%s AND user2_id=%s
     """, (u1, u2))
 
     row = cursor.fetchone()
@@ -381,12 +452,15 @@ def get_or_create_conversation(cursor, conn, user_a, user_b):
 
     cursor.execute("""
     INSERT INTO conversations (user1_id, user2_id, created_at)
-    VALUES (?, ?, ?)
+    VALUES (%s, %s, %s)
+    RETURNING id
     """, (u1, u2, datetime.now().isoformat()))
+
+    new_id = cursor.fetchone()[0]
 
     conn.commit()
 
-    return cursor.lastrowid
+    return new_id
 
 # -------------------------
 # Accueil
@@ -414,11 +488,11 @@ def register():
 
         photo = request.files["photo"]
 
-        conn = sqlite3.connect("database.db")
+        conn = get_db()
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT * FROM users WHERE pseudo=?",
+            "SELECT * FROM users WHERE pseudo=%s",
             (pseudo,)
         )
 
@@ -432,7 +506,7 @@ def register():
             )
 
         cursor.execute(
-            "SELECT * FROM users WHERE email=?",
+            "SELECT * FROM users WHERE email=%s",
             (email,)
         )
 
@@ -445,14 +519,11 @@ def register():
                 erreur="Cet email est déjà utilisé."
             )
 
-        filename = photo.filename
+        photo_url = None
 
-        photo.save(
-            os.path.join(
-                UPLOAD_FOLDER,
-                filename
-            )
-        )
+        if photo and photo.filename:
+            upload_result = cloudinary.uploader.upload(photo, resource_type="auto")
+            photo_url = upload_result["secure_url"]
 
         cursor.execute("""
         INSERT INTO users
@@ -463,13 +534,13 @@ def register():
             bio,
             photo
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
         """, (
             pseudo,
             email,
             password,
             bio,
-            filename
+            photo_url
         ))
 
         conn.commit()
@@ -494,20 +565,39 @@ def login():
         email = request.form["email"].lower()
         password = request.form["password"]
 
-        conn = sqlite3.connect("database.db")
+        conn = get_db()
         cursor = conn.cursor()
 
         cursor.execute(
             """
             SELECT *
             FROM users
-            WHERE email=?
-            AND password=?
+            WHERE email=%s
+            AND password=%s
             """,
             (email, password)
         )
 
         user = cursor.fetchone()
+
+        if user and user[10]:
+
+            conn.close()
+
+            return render_template(
+                "login.html",
+                erreur="Ce compte a été banni."
+            )
+
+        admin_email = os.environ.get("ADMIN_EMAIL", "").lower()
+
+        if user and admin_email and email == admin_email and not user[9]:
+
+            cursor.execute(
+                "UPDATE users SET is_admin=1 WHERE id=%s",
+                (user[0],)
+            )
+            conn.commit()
 
         conn.close()
 
@@ -523,9 +613,11 @@ def login():
             erreur="Email ou mot de passe incorrect."
         )
 
+    banned_notice = request.args.get("banned") == "1"
+
     return render_template(
         "login.html",
-        erreur=""
+        erreur="Ce compte a été banni." if banned_notice else ""
     )
 
 # -------------------------
@@ -539,18 +631,18 @@ def profile():
 
         return redirect("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT * FROM users WHERE id=?",
+        "SELECT * FROM users WHERE id=%s",
         (session["user_id"],)
     )
 
     user = cursor.fetchone()
 
     cursor.execute(
-        "SELECT * FROM posts WHERE user_id=? ORDER BY id DESC",
+        "SELECT * FROM posts WHERE user_id=%s ORDER BY id DESC",
         (session["user_id"],)
     )
 
@@ -559,7 +651,7 @@ def profile():
     cursor.execute("""
     SELECT COUNT(*) FROM friends
     WHERE status='accepted'
-    AND (sender_id=? OR receiver_id=?)
+    AND (sender_id=%s OR receiver_id=%s)
     """, (session["user_id"], session["user_id"]))
 
     nb_amis = cursor.fetchone()[0]
@@ -568,16 +660,16 @@ def profile():
     SELECT posts.*
     FROM saved_posts
     JOIN posts ON posts.id = saved_posts.post_id
-    WHERE saved_posts.user_id=?
+    WHERE saved_posts.user_id=%s
     ORDER BY saved_posts.id DESC
     """, (session["user_id"],))
 
     playlist = cursor.fetchall()
 
-    cursor.execute("SELECT COUNT(*) FROM follows WHERE following_id=?", (session["user_id"],))
+    cursor.execute("SELECT COUNT(*) FROM follows WHERE following_id=%s", (session["user_id"],))
     nb_abonnes = cursor.fetchone()[0]
 
-    cursor.execute("SELECT COUNT(*) FROM follows WHERE follower_id=?", (session["user_id"],))
+    cursor.execute("SELECT COUNT(*) FROM follows WHERE follower_id=%s", (session["user_id"],))
     nb_abonnements = cursor.fetchone()[0]
 
     conn.close()
@@ -608,11 +700,11 @@ def create_post():
         description = request.form["description"]
         media = request.files["media"]
 
-        upload = cloudinary.uploader.                       upload(media)
+        upload = cloudinary.uploader.upload(media, resource_type="auto")
 
         filename = upload["secure_url"]
 
-        conn = sqlite3.connect("database.db")
+        conn = get_db()
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -622,7 +714,7 @@ def create_post():
             image,
             description
         )
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
         """, (
             session["user_id"],
             filename,
@@ -651,7 +743,7 @@ def quest():
 
         return redirect("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -690,7 +782,7 @@ def quest():
     conn.commit()
 
     cursor.execute(
-        "SELECT xp, niveau, quetes FROM users WHERE id=?",
+        "SELECT xp, niveau, quetes FROM users WHERE id=%s",
         (session["user_id"],)
     )
 
@@ -716,11 +808,11 @@ def claim_quest(quest_id):
     if "user_id" not in session:
         return jsonify({"success": False}), 401
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT xp_reward, frequency FROM quests WHERE id=?",
+        "SELECT xp_reward, frequency FROM quests WHERE id=%s",
         (quest_id,)
     )
 
@@ -736,7 +828,7 @@ def claim_quest(quest_id):
     cursor.execute("""
     SELECT id, completed, claimed
     FROM quest_progress
-    WHERE user_id=? AND quest_id=? AND date=?
+    WHERE user_id=%s AND quest_id=%s AND date=%s
     """, (session["user_id"], quest_id, period))
 
     row = cursor.fetchone()
@@ -746,12 +838,12 @@ def claim_quest(quest_id):
         return jsonify({"success": False})
 
     cursor.execute(
-        "UPDATE quest_progress SET claimed=1 WHERE id=?",
+        "UPDATE quest_progress SET claimed=1 WHERE id=%s",
         (row[0],)
     )
 
     cursor.execute(
-        "SELECT xp, niveau, quetes FROM users WHERE id=?",
+        "SELECT xp, niveau, quetes FROM users WHERE id=%s",
         (session["user_id"],)
     )
 
@@ -769,8 +861,8 @@ def claim_quest(quest_id):
 
     cursor.execute("""
     UPDATE users
-    SET xp=?, niveau=?, quetes=?
-    WHERE id=?
+    SET xp=%s, niveau=%s, quetes=%s
+    WHERE id=%s
     """, (xp, niveau, quetes, session["user_id"]))
 
     conn.commit()
@@ -802,7 +894,7 @@ def logout():
 @app.route("/users")
 def users():
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -822,7 +914,7 @@ def users():
 @app.route("/feed")
 def feed():
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     current_user = session.get("user_id", 0)
@@ -835,7 +927,7 @@ def feed():
         users.niveau,
         COUNT(DISTINCT likes.id),
         COUNT(DISTINCT comments.id),
-        MAX(CASE WHEN likes.user_id = ? THEN 1 ELSE 0 END)
+        MAX(CASE WHEN likes.user_id = %s THEN 1 ELSE 0 END)
     FROM posts
 
     JOIN users
@@ -862,7 +954,7 @@ def feed():
         SELECT comments.commentaire, users.pseudo, comments.created_at
         FROM comments
         JOIN users ON comments.user_id = users.id
-        WHERE comments.post_id=?
+        WHERE comments.post_id=%s
         ORDER BY comments.id DESC
         LIMIT 1
         """, (row[0],))
@@ -871,7 +963,7 @@ def feed():
 
         cursor.execute("""
         SELECT id FROM saved_posts
-        WHERE user_id=? AND post_id=?
+        WHERE user_id=%s AND post_id=%s
         """, (current_user, row[0]))
 
         is_saved = cursor.fetchone() is not None
@@ -904,13 +996,13 @@ def feed():
 @app.route("/api/view/<int:post_id>", methods=["POST"])
 def api_view(post_id):
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     UPDATE posts
     SET views = views + 1
-    WHERE id=?
+    WHERE id=%s
     """, (post_id,))
 
     conn.commit()
@@ -931,14 +1023,14 @@ def like(post_id):
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     SELECT id
     FROM likes
-    WHERE user_id=?
-    AND post_id=?
+    WHERE user_id=%s
+    AND post_id=%s
     """, (
         session["user_id"],
         post_id
@@ -950,7 +1042,7 @@ def like(post_id):
 
         cursor.execute("""
         DELETE FROM likes
-        WHERE id=?
+        WHERE id=%s
         """, (
             like[0],
         ))
@@ -963,7 +1055,7 @@ def like(post_id):
             user_id,
             post_id
         )
-        VALUES (?, ?)
+        VALUES (%s, %s)
         """, (
             session["user_id"],
             post_id
@@ -984,13 +1076,13 @@ def search():
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     SELECT id, pseudo, photo, niveau
     FROM users
-    WHERE id != ?
+    WHERE id != %s
     ORDER BY pseudo COLLATE NOCASE
     """, (session["user_id"],))
 
@@ -1013,7 +1105,7 @@ def friends():
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -1027,7 +1119,7 @@ def friends():
     JOIN users
     ON friends.sender_id = users.id
 
-    WHERE friends.receiver_id=?
+    WHERE friends.receiver_id=%s
     AND friends.status='pending'
     """, (
         session["user_id"],
@@ -1047,11 +1139,11 @@ def friends():
 
     JOIN users
     ON users.id = (
-        CASE WHEN friends.sender_id=? THEN friends.receiver_id ELSE friends.sender_id END
+        CASE WHEN friends.sender_id=%s THEN friends.receiver_id ELSE friends.sender_id END
     )
 
     WHERE friends.status='accepted'
-    AND (friends.sender_id=? OR friends.receiver_id=?)
+    AND (friends.sender_id=%s OR friends.receiver_id=%s)
 
     ORDER BY users.pseudo COLLATE NOCASE
     """, (
@@ -1078,14 +1170,14 @@ def api_like(post_id):
     if "user_id" not in session:
         return jsonify({"success": False})
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     SELECT id
     FROM likes
-    WHERE user_id=?
-    AND post_id=?
+    WHERE user_id=%s
+    AND post_id=%s
     """, (
         session["user_id"],
         post_id
@@ -1098,7 +1190,7 @@ def api_like(post_id):
 
         cursor.execute("""
         DELETE FROM likes
-        WHERE id=?
+        WHERE id=%s
         """, (like[0],))
 
     else:
@@ -1106,7 +1198,7 @@ def api_like(post_id):
         cursor.execute("""
         INSERT INTO likes
         (user_id, post_id)
-        VALUES (?, ?)
+        VALUES (%s, %s)
         """, (
             session["user_id"],
             post_id
@@ -1119,7 +1211,7 @@ def api_like(post_id):
     cursor.execute("""
     SELECT COUNT(*)
     FROM likes
-    WHERE post_id=?
+    WHERE post_id=%s
     """, (post_id,))
 
     total_likes = cursor.fetchone()[0]
@@ -1127,7 +1219,7 @@ def api_like(post_id):
     owner_row = None
 
     if just_liked:
-        cursor.execute("SELECT user_id FROM posts WHERE id=?", (post_id,))
+        cursor.execute("SELECT user_id FROM posts WHERE id=%s", (post_id,))
         owner_row = cursor.fetchone()
 
     conn.close()
@@ -1156,29 +1248,29 @@ def api_follow(user_id):
     if user_id == session["user_id"]:
         return jsonify({"success": False, "error": "self"}), 400
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     SELECT id FROM follows
-    WHERE follower_id=? AND following_id=?
+    WHERE follower_id=%s AND following_id=%s
     """, (session["user_id"], user_id))
 
     row = cursor.fetchone()
     now_following = False
 
     if row:
-        cursor.execute("DELETE FROM follows WHERE id=?", (row[0],))
+        cursor.execute("DELETE FROM follows WHERE id=%s", (row[0],))
     else:
         cursor.execute("""
         INSERT INTO follows (follower_id, following_id, created_at)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
         """, (session["user_id"], user_id, datetime.now().isoformat()))
         now_following = True
 
     conn.commit()
 
-    cursor.execute("SELECT COUNT(*) FROM follows WHERE following_id=?", (user_id,))
+    cursor.execute("SELECT COUNT(*) FROM follows WHERE following_id=%s", (user_id,))
     followers_count = cursor.fetchone()[0]
 
     conn.close()
@@ -1198,10 +1290,10 @@ def followers_list(user_id):
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT pseudo FROM users WHERE id=?", (user_id,))
+    cursor.execute("SELECT pseudo FROM users WHERE id=%s", (user_id,))
     target = cursor.fetchone()
 
     if not target:
@@ -1212,7 +1304,7 @@ def followers_list(user_id):
     SELECT users.id, users.pseudo, users.photo, users.niveau
     FROM follows
     JOIN users ON users.id = follows.follower_id
-    WHERE follows.following_id=?
+    WHERE follows.following_id=%s
     ORDER BY follows.id DESC
     """, (user_id,))
 
@@ -1233,10 +1325,10 @@ def following_list(user_id):
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT pseudo FROM users WHERE id=?", (user_id,))
+    cursor.execute("SELECT pseudo FROM users WHERE id=%s", (user_id,))
     target = cursor.fetchone()
 
     if not target:
@@ -1247,7 +1339,7 @@ def following_list(user_id):
     SELECT users.id, users.pseudo, users.photo, users.niveau
     FROM follows
     JOIN users ON users.id = follows.following_id
-    WHERE follows.follower_id=?
+    WHERE follows.follower_id=%s
     ORDER BY follows.id DESC
     """, (user_id,))
 
@@ -1272,23 +1364,23 @@ def api_save(post_id):
     if "user_id" not in session:
         return jsonify({"success": False}), 401
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     SELECT id FROM saved_posts
-    WHERE user_id=? AND post_id=?
+    WHERE user_id=%s AND post_id=%s
     """, (session["user_id"], post_id))
 
     row = cursor.fetchone()
     now_saved = False
 
     if row:
-        cursor.execute("DELETE FROM saved_posts WHERE id=?", (row[0],))
+        cursor.execute("DELETE FROM saved_posts WHERE id=%s", (row[0],))
     else:
         cursor.execute("""
         INSERT INTO saved_posts (user_id, post_id, created_at)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
         """, (session["user_id"], post_id, datetime.now().isoformat()))
         now_saved = True
 
@@ -1304,11 +1396,12 @@ def api_save(post_id):
 @app.route("/comments/<int:post_id>")
 def comments(post_id):
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     SELECT
+    comments.id,
     comments.commentaire,
     users.pseudo,
     users.photo,
@@ -1316,7 +1409,7 @@ def comments(post_id):
     FROM comments
     JOIN users
     ON comments.user_id = users.id
-    WHERE comments.post_id=?
+    WHERE comments.post_id=%s
     ORDER BY comments.id DESC
     """, (post_id,))
 
@@ -1339,7 +1432,7 @@ def add_comment(post_id):
 
     commentaire = request.form["commentaire"]
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -1350,7 +1443,7 @@ def add_comment(post_id):
         commentaire,
         created_at
     )
-    VALUES (?, ?, ?, ?)
+    VALUES (%s, %s, %s, %s)
     """, (
         session["user_id"],
         post_id,
@@ -1358,7 +1451,7 @@ def add_comment(post_id):
         datetime.now().isoformat()
     ))
 
-    cursor.execute("SELECT user_id FROM posts WHERE id=?", (post_id,))
+    cursor.execute("SELECT user_id FROM posts WHERE id=%s", (post_id,))
     owner_row = cursor.fetchone()
 
     conn.commit()
@@ -1378,18 +1471,18 @@ def add_comment(post_id):
 @app.route("/user/<int:user_id>")
 def user_profile(user_id):
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT * FROM users WHERE id=?",
+        "SELECT * FROM users WHERE id=%s",
         (user_id,)
     )
 
     user = cursor.fetchone()
 
     cursor.execute(
-        "SELECT * FROM posts WHERE user_id=? ORDER BY id DESC",
+        "SELECT * FROM posts WHERE user_id=%s ORDER BY id DESC",
         (user_id,)
     )
 
@@ -1398,7 +1491,7 @@ def user_profile(user_id):
     cursor.execute("""
     SELECT COUNT(*) FROM friends
     WHERE status='accepted'
-    AND (sender_id=? OR receiver_id=?)
+    AND (sender_id=%s OR receiver_id=%s)
     """, (user_id, user_id))
 
     nb_amis = cursor.fetchone()[0]
@@ -1409,8 +1502,8 @@ def user_profile(user_id):
 
         cursor.execute("""
         SELECT status FROM friends
-        WHERE (sender_id=? AND receiver_id=?)
-        OR (sender_id=? AND receiver_id=?)
+        WHERE (sender_id=%s AND receiver_id=%s)
+        OR (sender_id=%s AND receiver_id=%s)
         """, (
             session["user_id"], user_id,
             user_id, session["user_id"]
@@ -1419,10 +1512,10 @@ def user_profile(user_id):
         row = cursor.fetchone()
         friend_status = row[0] if row else "none"
 
-    cursor.execute("SELECT COUNT(*) FROM follows WHERE following_id=?", (user_id,))
+    cursor.execute("SELECT COUNT(*) FROM follows WHERE following_id=%s", (user_id,))
     nb_abonnes = cursor.fetchone()[0]
 
-    cursor.execute("SELECT COUNT(*) FROM follows WHERE follower_id=?", (user_id,))
+    cursor.execute("SELECT COUNT(*) FROM follows WHERE follower_id=%s", (user_id,))
     nb_abonnements = cursor.fetchone()[0]
 
     is_following = False
@@ -1431,7 +1524,7 @@ def user_profile(user_id):
 
         cursor.execute("""
         SELECT id FROM follows
-        WHERE follower_id=? AND following_id=?
+        WHERE follower_id=%s AND following_id=%s
         """, (session["user_id"], user_id))
 
         is_following = cursor.fetchone() is not None
@@ -1455,13 +1548,13 @@ def user_profile(user_id):
 @app.route("/post/<int:post_id>")
 def post_detail(post_id):
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     UPDATE posts
     SET views = views + 1
-    WHERE id=?
+    WHERE id=%s
     """, (post_id,))
 
     conn.commit()
@@ -1471,7 +1564,7 @@ def post_detail(post_id):
     FROM posts
     JOIN users
     ON posts.user_id = users.id
-    WHERE posts.id=?
+    WHERE posts.id=%s
     """, (post_id,))
 
     post = cursor.fetchone()
@@ -1494,14 +1587,14 @@ def add_friend(user_id):
     if session["user_id"] == user_id:
         return redirect("/user/" + str(user_id))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     SELECT *
     FROM friends
-    WHERE sender_id=?
-    AND receiver_id=?
+    WHERE sender_id=%s
+    AND receiver_id=%s
     """, (
         session["user_id"],
         user_id
@@ -1517,7 +1610,7 @@ def add_friend(user_id):
             sender_id,
             receiver_id
         )
-        VALUES (?,?)
+        VALUES (%s,%s)
         """, (
             session["user_id"],
             user_id
@@ -1539,16 +1632,16 @@ def accept_friend(friend_id):
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT sender_id FROM friends WHERE id=?", (friend_id,))
+    cursor.execute("SELECT sender_id FROM friends WHERE id=%s", (friend_id,))
     sender_row = cursor.fetchone()
 
     cursor.execute("""
     UPDATE friends
     SET status='accepted'
-    WHERE id=?
+    WHERE id=%s
     """, (
         friend_id,
     ))
@@ -1571,7 +1664,7 @@ def notifications():
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -1586,7 +1679,7 @@ def notifications():
         users.photo
     FROM notifications
     JOIN users ON users.id = notifications.actor_id
-    WHERE notifications.user_id=?
+    WHERE notifications.user_id=%s
     ORDER BY notifications.id DESC
     LIMIT 50
     """, (session["user_id"],))
@@ -1596,7 +1689,7 @@ def notifications():
     cursor.execute("""
     UPDATE notifications
     SET is_read=1
-    WHERE user_id=? AND is_read=0
+    WHERE user_id=%s AND is_read=0
     """, (session["user_id"],))
 
     conn.commit()
@@ -1617,7 +1710,7 @@ def messages_list():
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -1639,13 +1732,13 @@ def messages_list():
         (
             SELECT COUNT(*) FROM messages
             WHERE conversation_id=c.id
-            AND sender_id != ?
+            AND sender_id != %s
             AND is_read = 0
         )
     FROM conversations c
     JOIN users u
-        ON u.id = (CASE WHEN c.user1_id=? THEN c.user2_id ELSE c.user1_id END)
-    WHERE c.user1_id=? OR c.user2_id=?
+        ON u.id = (CASE WHEN c.user1_id=%s THEN c.user2_id ELSE c.user1_id END)
+    WHERE c.user1_id=%s OR c.user2_id=%s
     ORDER BY (
         SELECT id FROM messages
         WHERE conversation_id=c.id
@@ -1676,7 +1769,7 @@ def conversation(user_id):
     if user_id == session["user_id"]:
         return redirect("/messages")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     conv_id = get_or_create_conversation(cursor, conn, session["user_id"], user_id)
@@ -1690,7 +1783,7 @@ def conversation(user_id):
             cursor.execute("""
             INSERT INTO messages
             (conversation_id, sender_id, content, created_at, is_read)
-            VALUES (?, ?, ?, ?, 0)
+            VALUES (%s, %s, %s, %s, 0)
             """, (
                 conv_id,
                 session["user_id"],
@@ -1705,7 +1798,7 @@ def conversation(user_id):
         return redirect("/messages/" + str(user_id))
 
     cursor.execute(
-        "SELECT id, pseudo, photo FROM users WHERE id=?",
+        "SELECT id, pseudo, photo FROM users WHERE id=%s",
         (user_id,)
     )
 
@@ -1714,7 +1807,7 @@ def conversation(user_id):
     cursor.execute("""
     UPDATE messages
     SET is_read=1
-    WHERE conversation_id=? AND sender_id != ?
+    WHERE conversation_id=%s AND sender_id != %s
     """, (conv_id, session["user_id"]))
 
     conn.commit()
@@ -1722,7 +1815,7 @@ def conversation(user_id):
     cursor.execute("""
     SELECT id, sender_id, content, created_at
     FROM messages
-    WHERE conversation_id=?
+    WHERE conversation_id=%s
     ORDER BY id ASC
     """, (conv_id,))
 
@@ -1745,13 +1838,13 @@ def poll_messages(conversation_id):
 
     since_id = request.args.get("since", 0, type=int)
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
     UPDATE messages
     SET is_read=1
-    WHERE conversation_id=? AND sender_id != ? AND id > ?
+    WHERE conversation_id=%s AND sender_id != %s AND id > %s
     """, (conversation_id, session["user_id"], since_id))
 
     conn.commit()
@@ -1759,7 +1852,7 @@ def poll_messages(conversation_id):
     cursor.execute("""
     SELECT id, sender_id, content, created_at
     FROM messages
-    WHERE conversation_id=? AND id > ?
+    WHERE conversation_id=%s AND id > %s
     ORDER BY id ASC
     """, (conversation_id, since_id))
 
@@ -1782,14 +1875,149 @@ def poll_messages(conversation_id):
     })
 
 # -------------------------
+# Administration
+# -------------------------
+
+@app.route("/admin")
+@admin_required
+def admin_dashboard():
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT id, pseudo, email, photo, is_admin, is_banned
+    FROM users
+    ORDER BY id DESC
+    """)
+
+    users_list = cursor.fetchall()
+
+    cursor.execute("""
+    SELECT
+        posts.id,
+        posts.image,
+        posts.description,
+        users.pseudo,
+        users.id
+    FROM posts
+    JOIN users ON users.id = posts.user_id
+    ORDER BY posts.id DESC
+    LIMIT 30
+    """)
+
+    posts_list = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "admin.html",
+        users_list=users_list,
+        posts_list=posts_list
+    )
+
+@app.route("/admin/toggle_ban/<int:user_id>", methods=["POST"])
+@admin_required
+def admin_toggle_ban(user_id):
+
+    if user_id == session["user_id"]:
+        return jsonify({"success": False, "error": "self"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT is_banned FROM users WHERE id=%s", (user_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({"success": False}), 404
+
+    new_status = 0 if row[0] else 1
+
+    cursor.execute(
+        "UPDATE users SET is_banned=%s WHERE id=%s",
+        (new_status, user_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True, "banned": bool(new_status)})
+
+@app.route("/admin/toggle_admin/<int:user_id>", methods=["POST"])
+@admin_required
+def admin_toggle_admin(user_id):
+
+    if user_id == session["user_id"]:
+        return jsonify({"success": False, "error": "self"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT is_admin FROM users WHERE id=%s", (user_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({"success": False}), 404
+
+    new_status = 0 if row[0] else 1
+
+    cursor.execute(
+        "UPDATE users SET is_admin=%s WHERE id=%s",
+        (new_status, user_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True, "admin": bool(new_status)})
+
+@app.route("/admin/delete_post/<int:post_id>", methods=["POST"])
+@admin_required
+def admin_delete_post(post_id):
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM likes WHERE post_id=%s", (post_id,))
+    cursor.execute("DELETE FROM comments WHERE post_id=%s", (post_id,))
+    cursor.execute("DELETE FROM saved_posts WHERE post_id=%s", (post_id,))
+    cursor.execute("DELETE FROM notifications WHERE post_id=%s", (post_id,))
+    cursor.execute("DELETE FROM posts WHERE id=%s", (post_id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
+
+@app.route("/admin/delete_comment/<int:comment_id>", methods=["POST"])
+@admin_required
+def admin_delete_comment(comment_id):
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM comments WHERE id=%s", (comment_id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
+
+# -------------------------
 # Lancement
 # -------------------------
 
 if __name__ == "__main__":
 
+    # Ce bloc ne sert qu'en local. Sur Render, c'est gunicorn (voir
+    # Procfile) qui démarre l'application, pas cette ligne.
+
     app.run(
         host="0.0.0.0",
-        port=5000,
-        debug=True
+        port=int(os.environ.get("PORT", 5000)),
+        debug=os.environ.get("FLASK_DEBUG", "0") == "1"
     )
    

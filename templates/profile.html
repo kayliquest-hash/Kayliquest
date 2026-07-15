@@ -1,5 +1,5 @@
 {% extends "layout/base.html" %}
-{% from "components/icons.html" import plus, trophy, envelope, eye %}
+{% from "components/icons.html" import plus, trophy, envelope, eye, shield %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
@@ -68,6 +68,10 @@
             <a href="/create_post" class="btn btn-primary">{{ plus(16, "#000") }} Publier</a>
             <a href="/quest" class="btn btn-outline">{{ trophy(16, "#FFD700") }} Quêtes</a>
             <a href="/messages" class="btn btn-outline">{{ envelope(16, "#FFD700") }} Messages</a>
+
+            {% if viewer_is_admin %}
+            <a href="/admin" class="btn btn-outline admin-entry-btn">{{ shield(16, "#FFD700") }} Administration</a>
+            {% endif %}
 
         </div>
 

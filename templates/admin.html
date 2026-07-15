@@ -1,0 +1,108 @@
+{% extends "layout/base.html" %}
+{% from "components/icons.html" import back_arrow, shield, ban, trash, check %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="admin-page">
+
+    <div class="admin-topbar">
+        <a href="/profile" class="back-btn">{{ back_arrow(20, "#FFD700") }}</a>
+        <h1>{{ shield(18, "#FFD700") }} Administration</h1>
+    </div>
+
+    <h2 class="admin-section-title">Utilisateurs ({{ users_list|length }})</h2>
+
+    <div class="admin-list">
+
+    {% for u in users_list %}
+
+        {% set uid, pseudo, email, photo, u_is_admin, u_is_banned = u %}
+
+        <div class="admin-row {% if u_is_banned %}is-banned{% endif %}" data-user-row="{{ uid }}">
+
+            {% if photo %}
+            <img src="{{ photo }}" class="admin-avatar">
+            {% else %}
+            <div class="admin-avatar placeholder">{{ pseudo[0]|upper }}</div>
+            {% endif %}
+
+            <div class="admin-info">
+                <h3>
+                    {{ pseudo }}
+                    {% if u_is_admin %}<span class="admin-badge">{{ shield(11, "#000") }} Admin</span>{% endif %}
+                    {% if u_is_banned %}<span class="banned-badge">Banni</span>{% endif %}
+                </h3>
+                <p>{{ email }}</p>
+            </div>
+
+            <div class="admin-actions">
+
+                <button
+                    class="icon-action-btn {% if u_is_admin %}active-gold{% endif %}"
+                    title="Admin"
+                    onclick="toggleAdmin({{ uid }}, this)"
+                    {% if uid == session['user_id'] %}disabled{% endif %}>
+                    {{ shield(16, "currentColor") }}
+                </button>
+
+                <button
+                    class="icon-action-btn {% if u_is_banned %}active-red{% endif %}"
+                    title="Bannir"
+                    onclick="toggleBan({{ uid }}, this)"
+                    {% if uid == session['user_id'] %}disabled{% endif %}>
+                    {{ ban(16, "currentColor") }}
+                </button>
+
+            </div>
+
+        </div>
+
+    {% endfor %}
+
+    </div>
+
+    <h2 class="admin-section-title">Publications récentes</h2>
+
+    <div class="admin-posts-list">
+
+    {% for p in posts_list %}
+
+        {% set pid, image, description, author_pseudo, author_id = p %}
+        {% set extension = image.split('.')[-1].lower() if image else '' %}
+
+        <div class="admin-post-row" data-post-row="{{ pid }}">
+
+            <div class="admin-post-thumb">
+                {% if extension in ['mp4','mov','webm'] %}
+                <video src="{{ image }}" muted></video>
+                {% elif image %}
+                <img src="{{ image }}">
+                {% endif %}
+            </div>
+
+            <div class="admin-post-info">
+                <h4>{{ author_pseudo }}</h4>
+                <p>{{ description or "(sans légende)" }}</p>
+            </div>
+
+            <button class="icon-action-btn active-red" title="Supprimer" onclick="deletePost({{ pid }}, this)">
+                {{ trash(16, "currentColor") }}
+            </button>
+
+        </div>
+
+    {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

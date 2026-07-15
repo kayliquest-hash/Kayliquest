@@ -62,6 +62,19 @@ Plus simple (tout au même endroit) mais la base gratuite de Render **expire aut
 | `CLOUDINARY_API_KEY` | ta clé API Cloudinary |
 | `CLOUDINARY_API_SECRET` | ton secret API Cloudinary |
 | `SECRET_KEY` | une longue chaîne aléatoire (sers-toi d'un générateur de mot de passe) |
+| `ADMIN_EMAIL` | l'email du compte que tu veux transformer en administrateur (optionnel, voir plus bas) |
+
+## Devenir administrateur
+
+Kayli Quest a un panneau d'administration (bannir un compte, promouvoir d'autres admins, supprimer des publications ou commentaires abusifs), accessible via un bouton "Administration" qui apparaît sur ta page profil une fois que tu es admin.
+
+Pour devenir le premier administrateur :
+1. Crée normalement ton compte sur le site (`/register`)
+2. Ajoute la variable `ADMIN_EMAIL` sur Render avec l'email exact de ce compte
+3. Redéploie (ou attends le redéploiement automatique)
+4. Reconnecte-toi (`/login`) avec ce compte — le statut admin s'active automatiquement à la connexion
+
+Une fois que tu es admin, tu peux promouvoir d'autres comptes directement depuis le panneau `/admin`, sans avoir besoin de retoucher aux variables d'environnement.
 
 5. Clique sur "Create Web Service". Render installe les dépendances et démarre l'app — les tables PostgreSQL sont créées automatiquement au premier lancement (`init_db()` s'exécute tout seul).
 6. Ton site est en ligne à une adresse du type `https://kayliquest.onrender.com`.

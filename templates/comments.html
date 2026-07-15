@@ -1,6 +1,6 @@
 {% extends "layout/base.html" %}
 
-{% from "components/icons.html" import back_arrow %}
+{% from "components/icons.html" import back_arrow, trash %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
@@ -31,23 +31,29 @@
 
         {% for commentaire in commentaires %}
 
-        <div class="comment">
+        <div class="comment" data-comment-row="{{ commentaire[0] }}">
 
-            {% if commentaire[2] %}
+            {% if commentaire[3] %}
             <img
-                src="{{ commentaire[2] }}"
+                src="{{ commentaire[3] }}"
                 class="comment-avatar">
             {% else %}
-            <div class="comment-avatar placeholder">{{ commentaire[1][0]|upper }}</div>
+            <div class="comment-avatar placeholder">{{ commentaire[2][0]|upper }}</div>
             {% endif %}
 
             <div class="comment-content">
 
-                <a href="/user/{{ commentaire[3] }}" class="comment-user">{{ commentaire[1] }}</a>
+                <a href="/user/{{ commentaire[4] }}" class="comment-user">{{ commentaire[2] }}</a>
 
-                <p class="comment-text">{{ commentaire[0] }}</p>
+                <p class="comment-text">{{ commentaire[1] }}</p>
 
             </div>
+
+            {% if viewer_is_admin %}
+            <button class="comment-delete-btn" onclick="adminDeleteComment({{ commentaire[0] }}, this)">
+                {{ trash(14, "#FF3B5C") }}
+            </button>
+            {% endif %}
 
         </div>
 
@@ -77,5 +83,22 @@
     </form>
 
 </div>
+
+{% if viewer_is_admin %}
+<script>
+function adminDeleteComment(commentId, button) {
+    if (!confirm("Supprimer ce commentaire ?")) return;
+    button.disabled = true;
+    fetch("/admin/delete_comment/" + commentId, { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) { button.disabled = false; return; }
+            const row = document.querySelector(`[data-comment-row="${commentId}"]`);
+            row.remove();
+        })
+        .catch(() => { button.disabled = false; });
+}
+</script>
+{% endif %}
 
 {% endblock %}
