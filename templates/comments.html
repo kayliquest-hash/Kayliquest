@@ -49,8 +49,8 @@
 
             </div>
 
-            {% if viewer_is_admin %}
-            <button class="comment-delete-btn" onclick="adminDeleteComment({{ commentaire[0] }}, this)">
+            {% if viewer_is_admin or commentaire[4] == session['user_id'] %}
+            <button class="comment-delete-btn" onclick="deleteComment({{ commentaire[0] }}, this)">
                 {{ trash(14, "#FF3B5C") }}
             </button>
             {% endif %}
@@ -84,12 +84,12 @@
 
 </div>
 
-{% if viewer_is_admin %}
+{% if viewer_is_admin or "user_id" in session %}
 <script>
-function adminDeleteComment(commentId, button) {
+function deleteComment(commentId, button) {
     if (!confirm("Supprimer ce commentaire ?")) return;
     button.disabled = true;
-    fetch("/admin/delete_comment/" + commentId, { method: "POST" })
+    fetch("/api/delete_comment/" + commentId, { method: "POST" })
         .then(r => r.json())
         .then(data => {
             if (!data.success) { button.disabled = false; return; }

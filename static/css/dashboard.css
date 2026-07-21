@@ -1,0 +1,96 @@
+/* =========================================
+   KAYLI QUEST - DASHBOARD DE CRÉATION
+========================================= */
+
+.dashboard-page{
+    min-height:100vh;
+    background:#000;
+    padding-bottom:40px;
+}
+
+.dashboard-topbar{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    padding:18px 16px;
+    border-bottom:1px solid #1a1a1a;
+}
+
+.dashboard-topbar h1{
+    color:#FFD700;
+    font-size:18px;
+    font-weight:800;
+}
+
+.back-btn{
+    position:absolute;
+    left:16px;
+    display:flex;
+}
+
+.dashboard-subtitle{
+    text-align:center;
+    color:#999;
+    font-size:14px;
+    margin:24px 0 20px;
+}
+
+.dashboard-cards{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    padding:0 18px;
+    max-width:480px;
+    margin:0 auto;
+}
+
+.dashboard-card{
+    display:flex;
+    align-items:center;
+    gap:16px;
+
+    background:#0d0d0d;
+    border:2px solid #222;
+    border-radius:20px;
+    padding:20px;
+
+    text-decoration:none;
+
+    transition:border-color 0.2s, transform 0.15s;
+}
+
+.dashboard-card:active{
+    transform:scale(0.98);
+}
+
+.dashboard-card-icon{
+    width:60px;
+    height:60px;
+    flex-shrink:0;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    background:rgba(255,215,0,0.08);
+    border-radius:16px;
+}
+
+.dashboard-card-text h2{
+    color:white;
+    font-size:18px;
+    font-weight:800;
+    margin-bottom:4px;
+}
+
+.dashboard-card-text p{
+    color:#999;
+    font-size:13px;
+}
+
+.dashboard-card-duel{
+    border-color:#FFD700;
+    background:linear-gradient(135deg,rgba(255,215,0,0.1),rgba(255,215,0,0.02));
+}

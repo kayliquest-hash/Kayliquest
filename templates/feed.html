@@ -1,5 +1,5 @@
 {% extends "layout/base.html" %}
-{% from "components/icons.html" import bell, search, heart, comment_bubble, bookmark, share, dots_vertical, chevron_down, lightning, speaker_on, speaker_off %}
+{% from "components/icons.html" import bell, search, heart, comment_bubble, bookmark, share, dots_vertical, chevron_down, lightning, speaker_on, speaker_off, trash %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/feed.css') }}">
@@ -73,12 +73,25 @@
 
         </div>
 
-        <button class="card-menu-btn">{{ dots_vertical(20, "#888") }}</button>
+        {% if post[1] == session.get('user_id') or viewer_is_admin %}
+        <button class="card-menu-btn" onclick="deletePost({{ post[0] }}, this)" title="Supprimer">
+            {{ trash(18, "#888") }}
+        </button>
+        {% endif %}
 
     </div>
 
     {% if post[3] %}
     <p class="card-caption" data-caption>{{ post[3] }}</p>
+    {% endif %}
+
+    {% if item.tagged_users|length > 0 %}
+    <p class="card-tags">
+        avec
+        {% for tu in item.tagged_users %}
+        <a href="/user/{{ tu[0] }}">{{ tu[1] }}</a>{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </p>
     {% endif %}
 
     <div class="card-media">
@@ -208,6 +221,12 @@
         <span class="icon-unmuted">{{ speaker_on(18, "#fff") }}</span>
     </button>
 
+    {% if post[1] == session.get('user_id') or viewer_is_admin %}
+    <button class="kayli-delete-btn" onclick="deletePost({{ post[0] }}, this)" title="Supprimer">
+        {{ trash(17, "#fff") }}
+    </button>
+    {% endif %}
+
     <div class="kayli-gradient"></div>
 
     <div class="kayli-user">
@@ -265,6 +284,15 @@
 
     {% if post[3] %}
     <p class="kayli-caption" data-caption>{{ post[3] }}</p>
+    {% endif %}
+
+    {% if item.tagged_users|length > 0 %}
+    <p class="kayli-tags">
+        avec
+        {% for tu in item.tagged_users %}
+        <a href="/user/{{ tu[0] }}">{{ tu[1] }}</a>{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </p>
     {% endif %}
 
 </div>

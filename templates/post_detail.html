@@ -1,6 +1,6 @@
 {% extends "layout/base.html" %}
 
-{% from "components/icons.html" import back_arrow, eye, comment_bubble %}
+{% from "components/icons.html" import back_arrow, eye, comment_bubble, trash %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/post_detail.css') }}">
@@ -13,6 +13,13 @@
     <div class="detail-topbar">
         <a href="javascript:history.back()" class="back-btn">{{ back_arrow(20, "#FFD700") }}</a>
         <h1>Publication</h1>
+
+        {% if post[1] == session.get('user_id') or viewer_is_admin %}
+        <button class="detail-delete-btn" onclick="deleteThisPost({{ post[0] }})" title="Supprimer">
+            {{ trash(18, "#FF3B5C") }}
+        </button>
+        {% endif %}
+
     </div>
 
     {% set extension = post[2].split('.')[-1].lower() if post[2] else '' %}
@@ -39,6 +46,15 @@
         <p class="detail-caption">{{ post[3] }}</p>
         {% endif %}
 
+        {% if tagged_users|length > 0 %}
+        <p class="detail-tags">
+            avec
+            {% for tu in tagged_users %}
+            <a href="/user/{{ tu[0] }}">{{ tu[1] }}</a>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        {% endif %}
+
         <div class="detail-meta">
 
             <span class="meta-with-icon">{{ eye(15, "#999") }} {{ post[4]|format_count }} vues</span>
@@ -50,5 +66,18 @@
     </div>
 
 </div>
+
+{% if post[1] == session.get('user_id') or viewer_is_admin %}
+<script>
+function deleteThisPost(postId) {
+    if (!confirm("Supprimer définitivement cette publication ?")) return;
+    fetch("/api/delete_post/" + postId, { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) window.location.href = "/feed";
+        });
+}
+</script>
+{% endif %}
 
 {% endblock %}

@@ -1,0 +1,62 @@
+{% extends "layout/base.html" %}
+{% from "components/icons.html" import back_arrow, swords %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/duel.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="duels-list-page">
+
+    <div class="duel-topbar">
+        <a href="/profile" class="back-btn">{{ back_arrow(20, "#FFD700") }}</a>
+        <h1>{{ swords(18, "#FFD700") }} Mes duels</h1>
+    </div>
+
+    <a href="/duel/new" class="duel-new-btn">{{ swords(16, "#000") }} Lancer un nouveau duel</a>
+
+    {% if duels|length == 0 %}
+
+    <div class="duel-empty">
+        <p>Aucun duel pour l'instant.</p>
+    </div>
+
+    {% else %}
+
+    <div class="duels-rows">
+
+    {% for d in duels %}
+
+        <a href="/duel/{{ d.id }}" class="duel-row">
+
+            {% if d.other_photo %}
+            <img src="{{ d.other_photo }}" class="duel-row-avatar">
+            {% else %}
+            <div class="duel-row-avatar placeholder">{{ d.other_pseudo[0]|upper }}</div>
+            {% endif %}
+
+            <div class="duel-row-info">
+                <h3>vs {{ d.other_pseudo }}</h3>
+                <span class="duel-row-status status-{{ d.status }}">
+                    {% if d.status == 'pending' %}En attente
+                    {% elif d.status == 'active' %}En cours
+                    {% elif d.status == 'grace' %}Dernière ligne droite
+                    {% elif d.status == 'scoring' %}Décompte des points
+                    {% elif d.status == 'finished' %}Terminé
+                    {% elif d.status == 'declined' %}Refusé
+                    {% endif %}
+                </span>
+            </div>
+
+        </a>
+
+    {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

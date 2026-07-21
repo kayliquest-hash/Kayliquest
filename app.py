@@ -208,6 +208,36 @@ CREATE TABLE IF NOT EXISTS friends (
     """)
 
     cursor.execute("""
+    CREATE TABLE IF NOT EXISTS post_tags (
+        id SERIAL PRIMARY KEY,
+        post_id INTEGER,
+        tagged_user_id INTEGER,
+        UNIQUE(post_id, tagged_user_id)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS duels (
+        id SERIAL PRIMARY KEY,
+        challenger_id INTEGER,
+        opponent_id INTEGER,
+        duration_minutes INTEGER,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT,
+        accepted_at TEXT,
+        deadline_at TEXT,
+        grace_deadline_at TEXT,
+        scoring_ends_at TEXT,
+        challenger_post_id INTEGER,
+        opponent_post_id INTEGER,
+        challenger_submitted_at TEXT,
+        opponent_submitted_at TEXT,
+        winner_id INTEGER,
+        resolved INTEGER DEFAULT 0
+    )
+    """)
+
+    cursor.execute("""
     CREATE TABLE IF NOT EXISTS conversations (
         id SERIAL PRIMARY KEY,
         user1_id INTEGER,
@@ -431,6 +461,168 @@ def create_notification(user_id, actor_id, notif_type, post_id=None):
 
     conn.commit()
     conn.close()
+
+# -------------------------
+# Helpers - Duels
+# -------------------------
+
+def compute_duel_score(cursor, post_id, user_id, window_start, window_end):
+
+    if not post_id:
+        return 0
+
+    cursor.execute("SELECT views FROM posts WHERE id=%s", (post_id,))
+    row = cursor.fetchone()
+    views = row[0] if row else 0
+
+    cursor.execute("SELECT COUNT(*) FROM likes WHERE post_id=%s", (post_id,))
+    likes = cursor.fetchone()[0]
+
+    cursor.execute("""
+    SELECT COUNT(*) FROM follows
+    WHERE following_id=%s AND created_at BETWEEN %s AND %s
+    """, (user_id, window_start, window_end))
+    new_follows = cursor.fetchone()[0]
+
+    return views + likes + new_follows
+
+def sync_duel_status(duel):
+    """
+    Fait avancer un duel dans le temps si besoin (minuteur écoulé, période de
+    grâce dépassée, 24h de score terminées) et sauvegarde le nouvel état.
+    Renvoie le duel (dict) à jour.
+    """
+
+    now = datetime.now()
+    changed = False
+    pending_notifications = []
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if duel["status"] == "active":
+
+        both_in = duel["challenger_post_id"] and duel["opponent_post_id"]
+
+        if both_in:
+
+            scoring_ends = now + timedelta(hours=24)
+
+            cursor.execute("""
+            UPDATE duels SET status='scoring', scoring_ends_at=%s WHERE id=%s
+            """, (scoring_ends.isoformat(), duel["id"]))
+
+            duel["status"] = "scoring"
+            duel["scoring_ends_at"] = scoring_ends.isoformat()
+            changed = True
+
+        elif duel["deadline_at"] and now > datetime.fromisoformat(duel["deadline_at"]):
+
+            grace_deadline = datetime.fromisoformat(duel["deadline_at"]) + timedelta(minutes=10)
+
+            cursor.execute("""
+            UPDATE duels SET status='grace', grace_deadline_at=%s WHERE id=%s
+            """, (grace_deadline.isoformat(), duel["id"]))
+
+            duel["status"] = "grace"
+            duel["grace_deadline_at"] = grace_deadline.isoformat()
+            changed = True
+
+    if duel["status"] == "grace":
+
+        both_in = duel["challenger_post_id"] and duel["opponent_post_id"]
+
+        if both_in:
+
+            scoring_ends = now + timedelta(hours=24)
+
+            cursor.execute("""
+            UPDATE duels SET status='scoring', scoring_ends_at=%s WHERE id=%s
+            """, (scoring_ends.isoformat(), duel["id"]))
+
+            duel["status"] = "scoring"
+            duel["scoring_ends_at"] = scoring_ends.isoformat()
+            changed = True
+
+        elif duel["grace_deadline_at"] and now > datetime.fromisoformat(duel["grace_deadline_at"]):
+
+            # période de grâce dépassée : celui qui a publié gagne par forfait,
+            # si personne n'a publié le duel est annulé
+            if duel["challenger_post_id"] and not duel["opponent_post_id"]:
+                winner = duel["challenger_id"]
+            elif duel["opponent_post_id"] and not duel["challenger_post_id"]:
+                winner = duel["opponent_id"]
+            else:
+                winner = None
+
+            cursor.execute("""
+            UPDATE duels SET status='finished', resolved=1, winner_id=%s WHERE id=%s
+            """, (winner, duel["id"]))
+
+            duel["status"] = "finished"
+            duel["resolved"] = 1
+            duel["winner_id"] = winner
+            changed = True
+
+            if winner:
+                loser = duel["opponent_id"] if winner == duel["challenger_id"] else duel["challenger_id"]
+                pending_notifications.append((loser, winner, "duel_result", duel["id"]))
+
+    if duel["status"] == "scoring" and duel["scoring_ends_at"]:
+
+        if now > datetime.fromisoformat(duel["scoring_ends_at"]):
+
+            challenger_score = compute_duel_score(
+                cursor, duel["challenger_post_id"], duel["challenger_id"],
+                duel["accepted_at"], duel["scoring_ends_at"]
+            )
+            opponent_score = compute_duel_score(
+                cursor, duel["opponent_post_id"], duel["opponent_id"],
+                duel["accepted_at"], duel["scoring_ends_at"]
+            )
+
+            if challenger_score > opponent_score:
+                winner = duel["challenger_id"]
+            elif opponent_score > challenger_score:
+                winner = duel["opponent_id"]
+            else:
+                winner = None
+
+            cursor.execute("""
+            UPDATE duels SET status='finished', resolved=1, winner_id=%s WHERE id=%s
+            """, (winner, duel["id"]))
+
+            duel["status"] = "finished"
+            duel["resolved"] = 1
+            duel["winner_id"] = winner
+            changed = True
+
+            pending_notifications.append((duel["challenger_id"], duel["opponent_id"], "duel_result", duel["id"]))
+            pending_notifications.append((duel["opponent_id"], duel["challenger_id"], "duel_result", duel["id"]))
+
+    if changed:
+        conn.commit()
+
+    conn.close()
+
+    # Les notifications ouvrent leur propre connexion : on ne les envoie
+    # qu'une fois celle-ci refermée, pour ne jamais avoir deux connexions
+    # d'écriture ouvertes en même temps.
+    for user_id, actor_id, notif_type, ref_id in pending_notifications:
+        create_notification(user_id, actor_id, notif_type, ref_id)
+
+    return duel
+
+def duel_row_to_dict(row):
+
+    keys = [
+        "id", "challenger_id", "opponent_id", "duration_minutes", "status",
+        "created_at", "accepted_at", "deadline_at", "grace_deadline_at",
+        "scoring_ends_at", "challenger_post_id", "opponent_post_id",
+        "challenger_submitted_at", "opponent_submitted_at", "winner_id", "resolved"
+    ]
+
+    return dict(zip(keys, row))
 
 # -------------------------
 # Helpers - Messagerie
@@ -688,6 +880,14 @@ def profile():
 # Publication
 # -------------------------
 
+@app.route("/create")
+def create_dashboard():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    return render_template("dashboard.html")
+
 @app.route("/create_post", methods=["GET", "POST"])
 def create_post():
 
@@ -699,6 +899,8 @@ def create_post():
 
         description = request.form["description"]
         media = request.files["media"]
+        tagged_ids = request.form.getlist("tagged_friends")
+        duel_id = request.form.get("duel_id")
 
         upload = cloudinary.uploader.upload(media, resource_type="auto")
 
@@ -715,22 +917,362 @@ def create_post():
             description
         )
         VALUES (%s, %s, %s)
+        RETURNING id
         """, (
             session["user_id"],
             filename,
             description
         ))
-             
+
+        new_post_id = cursor.fetchone()[0]
+
+        for friend_id in tagged_ids:
+
+            friend_id = int(friend_id)
+
+            cursor.execute("""
+            INSERT INTO post_tags (post_id, tagged_user_id)
+            VALUES (%s, %s)
+            ON CONFLICT (post_id, tagged_user_id) DO NOTHING
+            """, (new_post_id, friend_id))
+
+        duel_row = None
+
+        if duel_id:
+
+            cursor.execute("SELECT * FROM duels WHERE id=%s", (duel_id,))
+            drow = cursor.fetchone()
+
+            if drow:
+
+                duel_row = duel_row_to_dict(drow)
+
+                if duel_row["status"] in ("active", "grace"):
+
+                    if session["user_id"] == duel_row["challenger_id"] and not duel_row["challenger_post_id"]:
+
+                        cursor.execute("""
+                        UPDATE duels SET challenger_post_id=%s, challenger_submitted_at=%s
+                        WHERE id=%s
+                        """, (new_post_id, datetime.now().isoformat(), duel_id))
+
+                        duel_row["challenger_post_id"] = new_post_id
+
+                    elif session["user_id"] == duel_row["opponent_id"] and not duel_row["opponent_post_id"]:
+
+                        cursor.execute("""
+                        UPDATE duels SET opponent_post_id=%s, opponent_submitted_at=%s
+                        WHERE id=%s
+                        """, (new_post_id, datetime.now().isoformat(), duel_id))
+
+                        duel_row["opponent_post_id"] = new_post_id
+
         conn.commit()
         conn.close()
 
         bump_quest_progress(session["user_id"], "post")
 
+        for friend_id in tagged_ids:
+            create_notification(int(friend_id), session["user_id"], "tag", new_post_id)
+
+        if duel_row:
+            sync_duel_status(duel_row)
+            return redirect("/duel/" + str(duel_id))
+
         return redirect("/profile")
 
-    return render_template(
-        "create_post.html"
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT
+        users.id,
+        users.pseudo,
+        users.photo
+    FROM friends
+
+    JOIN users
+    ON users.id = (
+        CASE WHEN friends.sender_id=%s THEN friends.receiver_id ELSE friends.sender_id END
     )
+
+    WHERE friends.status='accepted'
+    AND (friends.sender_id=%s OR friends.receiver_id=%s)
+
+    ORDER BY LOWER(users.pseudo)
+    """, (
+        session["user_id"],
+        session["user_id"],
+        session["user_id"]
+    ))
+
+    friends_list = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "create_post.html",
+        friends_list=friends_list,
+        duel_id=request.args.get("duel_id")
+    )
+
+# -------------------------
+# Duels
+# -------------------------
+
+DUEL_DURATIONS = [15, 30, 60, 180, 360, 720, 1440]
+
+@app.route("/duel/new")
+def duel_new():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT
+        users.id,
+        users.pseudo,
+        users.photo
+    FROM friends
+
+    JOIN users
+    ON users.id = (
+        CASE WHEN friends.sender_id=%s THEN friends.receiver_id ELSE friends.sender_id END
+    )
+
+    WHERE friends.status='accepted'
+    AND (friends.sender_id=%s OR friends.receiver_id=%s)
+
+    ORDER BY LOWER(users.pseudo)
+    """, (
+        session["user_id"],
+        session["user_id"],
+        session["user_id"]
+    ))
+
+    friends_list = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "duel_new.html",
+        friends_list=friends_list,
+        durations=DUEL_DURATIONS
+    )
+
+@app.route("/duel/challenge", methods=["POST"])
+def duel_challenge():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    opponent_id = int(request.form["opponent_id"])
+    duration = int(request.form["duration"])
+
+    if opponent_id == session["user_id"] or duration not in DUEL_DURATIONS:
+        return redirect("/duel/new")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    INSERT INTO duels
+    (challenger_id, opponent_id, duration_minutes, status, created_at)
+    VALUES (%s, %s, %s, 'pending', %s)
+    RETURNING id
+    """, (
+        session["user_id"],
+        opponent_id,
+        duration,
+        datetime.now().isoformat()
+    ))
+
+    new_duel_id = cursor.fetchone()[0]
+
+    conn.commit()
+    conn.close()
+
+    create_notification(opponent_id, session["user_id"], "duel_challenge", new_duel_id)
+
+    return redirect("/duel/" + str(new_duel_id))
+
+@app.route("/duel/<int:duel_id>")
+def duel_detail(duel_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM duels WHERE id=%s", (duel_id,))
+    drow = cursor.fetchone()
+
+    if not drow:
+        conn.close()
+        return redirect("/feed")
+
+    duel = duel_row_to_dict(drow)
+
+    if session["user_id"] not in (duel["challenger_id"], duel["opponent_id"]):
+        conn.close()
+        return redirect("/feed")
+
+    duel = sync_duel_status(duel)
+
+    cursor.execute(
+        "SELECT id, pseudo, photo, niveau FROM users WHERE id=%s",
+        (duel["challenger_id"],)
+    )
+    challenger = cursor.fetchone()
+
+    cursor.execute(
+        "SELECT id, pseudo, photo, niveau FROM users WHERE id=%s",
+        (duel["opponent_id"],)
+    )
+    opponent = cursor.fetchone()
+
+    challenger_post = None
+    opponent_post = None
+
+    if duel["challenger_post_id"]:
+        cursor.execute("SELECT id, image, description, views FROM posts WHERE id=%s", (duel["challenger_post_id"],))
+        challenger_post = cursor.fetchone()
+
+    if duel["opponent_post_id"]:
+        cursor.execute("SELECT id, image, description, views FROM posts WHERE id=%s", (duel["opponent_post_id"],))
+        opponent_post = cursor.fetchone()
+
+    challenger_score = None
+    opponent_score = None
+
+    if duel["status"] in ("scoring", "finished") and duel["accepted_at"]:
+
+        window_end = duel["scoring_ends_at"] or datetime.now().isoformat()
+
+        challenger_score = compute_duel_score(
+            cursor, duel["challenger_post_id"], duel["challenger_id"],
+            duel["accepted_at"], window_end
+        )
+        opponent_score = compute_duel_score(
+            cursor, duel["opponent_post_id"], duel["opponent_id"],
+            duel["accepted_at"], window_end
+        )
+
+    conn.close()
+
+    return render_template(
+        "duel_detail.html",
+        duel=duel,
+        challenger=challenger,
+        opponent=opponent,
+        challenger_post=challenger_post,
+        opponent_post=opponent_post,
+        challenger_score=challenger_score,
+        opponent_score=opponent_score
+    )
+
+@app.route("/duel/accept/<int:duel_id>", methods=["POST"])
+def duel_accept(duel_id):
+
+    if "user_id" not in session:
+        return jsonify({"success": False}), 401
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM duels WHERE id=%s", (duel_id,))
+    drow = cursor.fetchone()
+
+    if not drow:
+        conn.close()
+        return jsonify({"success": False}), 404
+
+    duel = duel_row_to_dict(drow)
+
+    if duel["opponent_id"] != session["user_id"] or duel["status"] != "pending":
+        conn.close()
+        return jsonify({"success": False}), 403
+
+    now = datetime.now()
+    deadline = now + timedelta(minutes=duel["duration_minutes"])
+
+    cursor.execute("""
+    UPDATE duels
+    SET status='active', accepted_at=%s, deadline_at=%s
+    WHERE id=%s
+    """, (now.isoformat(), deadline.isoformat(), duel_id))
+
+    conn.commit()
+    conn.close()
+
+    create_notification(duel["challenger_id"], duel["opponent_id"], "duel_accepted", duel_id)
+
+    return jsonify({"success": True})
+
+@app.route("/duel/decline/<int:duel_id>", methods=["POST"])
+def duel_decline(duel_id):
+
+    if "user_id" not in session:
+        return jsonify({"success": False}), 401
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT opponent_id, status, challenger_id FROM duels WHERE id=%s", (duel_id,))
+    row = cursor.fetchone()
+
+    if not row or row[0] != session["user_id"] or row[1] != "pending":
+        conn.close()
+        return jsonify({"success": False}), 403
+
+    cursor.execute("UPDATE duels SET status='declined' WHERE id=%s", (duel_id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
+
+@app.route("/duels")
+def duels_list():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT id, challenger_id, opponent_id, status
+    FROM duels
+    WHERE challenger_id=%s OR opponent_id=%s
+    ORDER BY id DESC
+    """, (session["user_id"], session["user_id"]))
+
+    raw_duels = cursor.fetchall()
+
+    duels_data = []
+
+    for d in raw_duels:
+
+        other_id = d[2] if d[1] == session["user_id"] else d[1]
+
+        cursor.execute("SELECT pseudo, photo FROM users WHERE id=%s", (other_id,))
+        other = cursor.fetchone()
+
+        duels_data.append({
+            "id": d[0],
+            "status": d[3],
+            "other_pseudo": other[0] if other else "?",
+            "other_photo": other[1] if other else None
+        })
+
+    conn.close()
+
+    return render_template("duels_list.html", duels=duels_data)
 
 # -------------------------
 # Quête
@@ -939,7 +1481,7 @@ def feed():
     LEFT JOIN comments
         ON posts.id = comments.post_id
 
-    GROUP BY posts.id
+    GROUP BY posts.id, users.pseudo, users.photo, users.niveau
 
     ORDER BY posts.id DESC
     """, (current_user,))
@@ -968,6 +1510,15 @@ def feed():
 
         is_saved = cursor.fetchone() is not None
 
+        cursor.execute("""
+        SELECT users.id, users.pseudo
+        FROM post_tags
+        JOIN users ON users.id = post_tags.tagged_user_id
+        WHERE post_tags.post_id=%s
+        """, (row[0],))
+
+        tagged_users = cursor.fetchall()
+
         extension = row[2].split(".")[-1].lower() if row[2] else ""
         is_video = extension in ["mp4", "mov", "webm"]
 
@@ -975,7 +1526,8 @@ def feed():
             "row": row,
             "last_comment": last_comment,
             "is_saved": is_saved,
-            "is_video": is_video
+            "is_video": is_video,
+            "tagged_users": tagged_users
         })
 
     conn.close()
@@ -1083,7 +1635,7 @@ def search():
     SELECT id, pseudo, photo, niveau
     FROM users
     WHERE id != %s
-    ORDER BY pseudo COLLATE NOCASE
+    ORDER BY LOWER(pseudo)
     """, (session["user_id"],))
 
     users = cursor.fetchall()
@@ -1145,7 +1697,7 @@ def friends():
     WHERE friends.status='accepted'
     AND (friends.sender_id=%s OR friends.receiver_id=%s)
 
-    ORDER BY users.pseudo COLLATE NOCASE
+    ORDER BY LOWER(users.pseudo)
     """, (
         session["user_id"],
         session["user_id"],
@@ -1463,6 +2015,35 @@ def add_comment(post_id):
         create_notification(owner_row[0], session["user_id"], "comment", post_id)
 
     return redirect("/comments/" + str(post_id))        
+
+@app.route("/api/delete_comment/<int:comment_id>", methods=["POST"])
+def delete_own_comment(comment_id):
+
+    if "user_id" not in session:
+        return jsonify({"success": False}), 401
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT user_id FROM comments WHERE id=%s", (comment_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({"success": False}), 404
+
+    is_owner = row[0] == session["user_id"]
+
+    if not is_owner and not getattr(g, "viewer_is_admin", False):
+        conn.close()
+        return jsonify({"success": False}), 403
+
+    cursor.execute("DELETE FROM comments WHERE id=%s", (comment_id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
   
 #-------------------------
 #Profil Public
@@ -1569,12 +2150,57 @@ def post_detail(post_id):
 
     post = cursor.fetchone()
 
+    cursor.execute("""
+    SELECT users.id, users.pseudo
+    FROM post_tags
+    JOIN users ON users.id = post_tags.tagged_user_id
+    WHERE post_tags.post_id=%s
+    """, (post_id,))
+
+    tagged_users = cursor.fetchall()
+
     conn.close()
 
     return render_template(
         "post_detail.html",
-        post=post
-    )                                                                                                                                                                                                                              #--------------------------
+        post=post,
+        tagged_users=tagged_users
+    )
+
+@app.route("/api/delete_post/<int:post_id>", methods=["POST"])
+def delete_own_post(post_id):
+
+    if "user_id" not in session:
+        return jsonify({"success": False}), 401
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT user_id FROM posts WHERE id=%s", (post_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({"success": False}), 404
+
+    is_owner = row[0] == session["user_id"]
+
+    if not is_owner and not getattr(g, "viewer_is_admin", False):
+        conn.close()
+        return jsonify({"success": False}), 403
+
+    cursor.execute("DELETE FROM likes WHERE post_id=%s", (post_id,))
+    cursor.execute("DELETE FROM comments WHERE post_id=%s", (post_id,))
+    cursor.execute("DELETE FROM saved_posts WHERE post_id=%s", (post_id,))
+    cursor.execute("DELETE FROM notifications WHERE post_id=%s", (post_id,))
+    cursor.execute("DELETE FROM posts WHERE id=%s", (post_id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
+
+#--------------------------
 #Amis
 #--------------------------
 

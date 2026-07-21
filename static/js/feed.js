@@ -242,6 +242,34 @@ function likePost(postId, button) {
 
 }
 
+// --- Supprimer son propre post ---
+
+function deletePost(postId, button) {
+
+    if (!confirm("Supprimer définitivement cette publication ?")) return;
+
+    button.disabled = true;
+
+    fetch("/api/delete_post/" + postId, { method: "POST" })
+
+        .then(r => r.json())
+
+        .then(data => {
+
+            if (!data.success) {
+                button.disabled = false;
+                return;
+            }
+
+            const card = document.querySelector(`[data-post-id="${postId}"]`);
+            if (card) card.remove();
+
+        })
+
+        .catch(() => { button.disabled = false; });
+
+}
+
 // --- Sauvegarder (playlist) ---
 
 function savePost(postId, button) {

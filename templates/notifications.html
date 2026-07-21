@@ -1,5 +1,5 @@
 {% extends "layout/base.html" %}
-{% from "components/icons.html" import back_arrow, heart, comment_bubble, people, bell, plus %}
+{% from "components/icons.html" import back_arrow, heart, comment_bubble, people, bell, plus, at_sign, swords %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
@@ -31,7 +31,7 @@
         {% set notif_id, ntype, post_id, is_read, created_at, actor_id, actor_pseudo, actor_photo = n %}
 
         <a
-            href="{% if ntype in ['like','comment'] %}/comments/{{ post_id }}{% else %}/user/{{ actor_id }}{% endif %}"
+            href="{% if ntype in ['like','comment','tag'] %}/comments/{{ post_id }}{% elif ntype in ['duel_challenge','duel_accepted','duel_result'] %}/duel/{{ post_id }}{% else %}/user/{{ actor_id }}{% endif %}"
             class="notif-row {% if not is_read %}unread{% endif %}">
 
             {% if actor_photo %}
@@ -44,6 +44,8 @@
                 {% if ntype == 'like' %}{{ heart(13, "#FF3B5C", filled=True) }}
                 {% elif ntype == 'comment' %}{{ comment_bubble(13, "#FFD700") }}
                 {% elif ntype == 'follow' %}{{ plus(13, "#FFD700") }}
+                {% elif ntype == 'tag' %}{{ at_sign(13, "#FFD700") }}
+                {% elif ntype in ['duel_challenge','duel_accepted','duel_result'] %}{{ swords(13, "#FFD700") }}
                 {% else %}{{ people(13, "#FFD700") }}
                 {% endif %}
             </span>
@@ -58,6 +60,10 @@
                     {% elif ntype == 'friend_request' %} t'a envoyé une demande d'ami
                     {% elif ntype == 'friend_accept' %} a accepté ta demande d'ami
                     {% elif ntype == 'follow' %} a commencé à te suivre
+                    {% elif ntype == 'tag' %} t'a tagué dans une publication
+                    {% elif ntype == 'duel_challenge' %} te lance un duel !
+                    {% elif ntype == 'duel_accepted' %} a accepté ton duel !
+                    {% elif ntype == 'duel_result' %} → résultat du duel disponible
                     {% endif %}
                 </p>
 

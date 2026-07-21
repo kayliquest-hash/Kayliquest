@@ -1,6 +1,6 @@
 {% extends "layout/base.html" %}
 
-{% from "components/icons.html" import camera, rocket, x_close %}
+{% from "components/icons.html" import camera, rocket, x_close, swords %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/create_post.css') }}">
@@ -8,9 +8,11 @@
 
 {% block content %}
 
+{% set content_type = request.args.get('type', 'photo') %}
+
 <div class="create-page">
 
-    <h1>Nouvelle quête</h1>
+    <h1>{% if content_type == 'video' %}Nouveau Kayli{% else %}Nouvelle quête{% endif %}</h1>
     <p class="create-subtitle">Partage un moment avec ta guilde</p>
 
     <form
@@ -19,13 +21,18 @@
         class="create-form"
         id="create-form">
 
+        {% if duel_id %}
+        <input type="hidden" name="duel_id" value="{{ duel_id }}">
+        <div class="duel-banner">{{ swords(16, "#FFD700") }} Ce post compte pour ton duel en cours</div>
+        {% endif %}
+
         <div class="upload-zone">
 
             <input
                 type="file"
                 id="media"
                 name="media"
-                accept="image/*,video/*"
+                accept="{% if content_type == 'video' %}video/*{% else %}image/*{% endif %}"
                 hidden
                 required>
 
@@ -33,7 +40,7 @@
 
                 <div class="upload-arrow">{{ camera(46, "#FFD700") }}</div>
                 <h2>Ajouter un post</h2>
-                <p>Photo ou vidéo</p>
+                <p>{% if content_type == 'video' %}Vidéo courte{% else %}Photo{% endif %}</p>
                 <span>Appuie ici pour sélectionner un fichier</span>
 
             </label>
@@ -62,6 +69,40 @@
             <span class="char-counter"><span id="char-count">0</span>/500</span>
 
         </div>
+
+        {% if friends_list|length > 0 %}
+
+        <div class="tag-wrapper">
+
+            <button type="button" class="tag-toggle-btn" id="tag-toggle-btn">
+                Taguer des amis <span id="tag-count-badge"></span>
+            </button>
+
+            <div class="tag-list" id="tag-list" hidden>
+
+            {% for friend in friends_list %}
+
+                <label class="tag-option">
+
+                    <input type="checkbox" name="tagged_friends" value="{{ friend[0] }}">
+
+                    {% if friend[2] %}
+                    <img src="{{ friend[2] }}" class="tag-avatar">
+                    {% else %}
+                    <div class="tag-avatar placeholder">{{ friend[1][0]|upper }}</div>
+                    {% endif %}
+
+                    <span>{{ friend[1] }}</span>
+
+                </label>
+
+            {% endfor %}
+
+            </div>
+
+        </div>
+
+        {% endif %}
 
         <button class="publish-btn" type="submit" id="publish-btn">
             {{ rocket(19, "#000") }} Publier le post

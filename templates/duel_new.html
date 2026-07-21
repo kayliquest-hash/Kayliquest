@@ -1,0 +1,82 @@
+{% extends "layout/base.html" %}
+{% from "components/icons.html" import back_arrow, swords, lightning %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/duel.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="duel-new-page">
+
+    <div class="duel-topbar">
+        <a href="javascript:history.back()" class="back-btn">{{ back_arrow(20, "#FFD700") }}</a>
+        <h1>{{ swords(18, "#FFD700") }} Lancer un duel</h1>
+    </div>
+
+    {% if friends_list|length == 0 %}
+
+    <div class="duel-empty">
+        <p>Tu dois avoir au moins un ami pour lancer un duel.</p>
+        <a href="/friends" class="empty-btn">Trouver des amis</a>
+    </div>
+
+    {% else %}
+
+    <form method="POST" action="/duel/challenge" class="duel-form">
+
+        <h2 class="duel-section-title">Choisis ton adversaire</h2>
+
+        <div class="duel-opponent-list">
+
+        {% for friend in friends_list %}
+
+            <label class="duel-opponent-option">
+
+                <input type="radio" name="opponent_id" value="{{ friend[0] }}" required>
+
+                {% if friend[2] %}
+                <img src="{{ friend[2] }}" class="duel-opponent-avatar">
+                {% else %}
+                <div class="duel-opponent-avatar placeholder">{{ friend[1][0]|upper }}</div>
+                {% endif %}
+
+                <span>{{ friend[1] }}</span>
+
+            </label>
+
+        {% endfor %}
+
+        </div>
+
+        <h2 class="duel-section-title">Durée pour publier</h2>
+
+        <div class="duel-duration-list">
+
+        {% for d in durations %}
+
+            <label class="duel-duration-option">
+                <input type="radio" name="duration" value="{{ d }}" {% if d == 60 %}checked{% endif %} required>
+                <span>
+                    {% if d < 60 %}{{ d }} min
+                    {% elif d < 1440 %}{{ (d / 60)|int }} h
+                    {% else %}{{ (d / 1440)|int }} j
+                    {% endif %}
+                </span>
+            </label>
+
+        {% endfor %}
+
+        </div>
+
+        <button type="submit" class="duel-submit-btn">
+            {{ swords(18, "#000") }} Envoyer le défi
+        </button>
+
+    </form>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

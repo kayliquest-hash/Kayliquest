@@ -1,0 +1,153 @@
+{% extends "layout/base.html" %}
+{% from "components/icons.html" import back_arrow, swords, trophy, check, x_close, lightning, eye, heart, plus as plus_icon %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/duel.css') }}">
+{% endblock %}
+
+{% block content %}
+
+{% set is_challenger = session['user_id'] == duel.challenger_id %}
+{% set me = challenger if is_challenger else opponent %}
+{% set rival = opponent if is_challenger else challenger %}
+{% set my_post = challenger_post if is_challenger else opponent_post %}
+{% set rival_post = opponent_post if is_challenger else challenger_post %}
+{% set my_score = challenger_score if is_challenger else opponent_score %}
+{% set rival_score = opponent_score if is_challenger else challenger_score %}
+{% set i_submitted = duel.challenger_post_id if is_challenger else duel.opponent_post_id %}
+
+<div class="duel-detail-page">
+
+    <div class="duel-topbar">
+        <a href="/duels" class="back-btn">{{ back_arrow(20, "#FFD700") }}</a>
+        <h1>{{ swords(18, "#FFD700") }} Duel</h1>
+    </div>
+
+    <div class="duel-vs-header">
+
+        <div class="duel-side">
+            {% if me[2] %}<img src="{{ me[2] }}" class="duel-vs-avatar">{% else %}<div class="duel-vs-avatar placeholder">{{ me[1][0]|upper }}</div>{% endif %}
+            <span>{{ me[1] }}</span>
+            <small>Toi</small>
+        </div>
+
+        <div class="duel-vs-label">VS</div>
+
+        <div class="duel-side">
+            {% if rival[2] %}<img src="{{ rival[2] }}" class="duel-vs-avatar">{% else %}<div class="duel-vs-avatar placeholder">{{ rival[1][0]|upper }}</div>{% endif %}
+            <span>{{ rival[1] }}</span>
+            <small>Adversaire</small>
+        </div>
+
+    </div>
+
+    {% if duel.status == 'pending' %}
+
+        {% if is_challenger %}
+
+        <div class="duel-status-box">
+            <p>En attente de la réponse de {{ rival[1] }}...</p>
+        </div>
+
+        {% else %}
+
+        <div class="duel-status-box duel-invite">
+            <p>{{ challenger[1] }} te défie en duel !</p>
+            <p class="duel-duration-note">Durée pour publier : <strong>{{ duel.duration_minutes }} min</strong></p>
+
+            <div class="duel-invite-actions">
+                <button class="duel-accept-btn" onclick="respondDuel({{ duel.id }}, 'accept')">{{ check(16, "#000") }} Accepter</button>
+                <button class="duel-decline-btn" onclick="respondDuel({{ duel.id }}, 'decline')">{{ x_close(16, "#FF3B5C") }} Refuser</button>
+            </div>
+        </div>
+
+        {% endif %}
+
+    {% elif duel.status in ['active', 'grace'] %}
+
+        <div class="duel-status-box">
+
+            <p class="duel-timer-label">
+                {% if duel.status == 'grace' %}Période de grâce{% else %}Temps restant pour publier{% endif %}
+            </p>
+
+            <div class="duel-timer"
+                 data-deadline="{{ duel.grace_deadline_at if duel.status == 'grace' else duel.deadline_at }}">
+                --:--:--
+            </div>
+
+            {% if i_submitted %}
+            <p class="duel-waiting">Ton post est publié. En attente de {{ rival[1] }}...</p>
+            {% else %}
+            <a href="/create_post?type=photo&duel_id={{ duel.id }}" class="duel-submit-btn">
+                {{ swords(18, "#000") }} Publier mon post / Kayli
+            </a>
+            {% endif %}
+
+        </div>
+
+    {% elif duel.status == 'scoring' %}
+
+        <div class="duel-status-box">
+            <p class="duel-timer-label">Résultats dans</p>
+            <div class="duel-timer" data-deadline="{{ duel.scoring_ends_at }}">--:--:--</div>
+        </div>
+
+        <div class="duel-score-compare">
+
+            <div class="duel-score-card {% if my_score is not none and rival_score is not none and my_score > rival_score %}leading{% endif %}">
+                <h3>Toi</h3>
+                {% if my_post %}<div class="duel-score-total">{{ my_score }} pts</div>{% else %}<p class="duel-forfeit">Non publié</p>{% endif %}
+            </div>
+
+            <div class="duel-score-card {% if my_score is not none and rival_score is not none and rival_score > my_score %}leading{% endif %}">
+                <h3>{{ rival[1] }}</h3>
+                {% if rival_post %}<div class="duel-score-total">{{ rival_score }} pts</div>{% else %}<p class="duel-forfeit">Non publié</p>{% endif %}
+            </div>
+
+        </div>
+
+    {% elif duel.status == 'finished' %}
+
+        <div class="duel-result-box">
+
+            {% if duel.winner_id == session['user_id'] %}
+            <div class="duel-trophy">{{ trophy(40, "#FFD700") }}</div>
+            <h2 class="duel-win">Victoire !</h2>
+            {% elif duel.winner_id %}
+            <h2 class="duel-lose">{{ rival[1] }} a gagné ce duel</h2>
+            {% else %}
+            <h2 class="duel-draw">Égalité</h2>
+            {% endif %}
+
+        </div>
+
+        <div class="duel-score-compare">
+
+            <div class="duel-score-card {% if duel.winner_id == me[0] %}leading{% endif %}">
+                <h3>Toi</h3>
+                <div class="duel-score-total">{{ my_score if my_score is not none else 0 }} pts</div>
+            </div>
+
+            <div class="duel-score-card {% if duel.winner_id == rival[0] %}leading{% endif %}">
+                <h3>{{ rival[1] }}</h3>
+                <div class="duel-score-total">{{ rival_score if rival_score is not none else 0 }} pts</div>
+            </div>
+
+        </div>
+
+    {% elif duel.status == 'declined' %}
+
+        <div class="duel-status-box">
+            <p>Ce duel a été refusé.</p>
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/duel.js') }}"></script>
+{% endblock %}

@@ -63,6 +63,25 @@ document.addEventListener("DOMContentLoaded", () => {
         charCount.textContent = descriptionInput.value.length;
     });
 
+    const tagToggleBtn = document.getElementById("tag-toggle-btn");
+    const tagList = document.getElementById("tag-list");
+    const tagCountBadge = document.getElementById("tag-count-badge");
+
+    if (tagToggleBtn) {
+
+        tagToggleBtn.addEventListener("click", () => {
+            tagList.hidden = !tagList.hidden;
+        });
+
+        tagList.addEventListener("change", () => {
+
+            const checked = tagList.querySelectorAll("input:checked").length;
+            tagCountBadge.textContent = checked > 0 ? checked : "";
+
+        });
+
+    }
+
     form.addEventListener("submit", () => {
 
         publishBtn.disabled = true;

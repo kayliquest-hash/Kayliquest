@@ -1,0 +1,49 @@
+{% extends "layout/base.html" %}
+{% from "components/icons.html" import camera, back_arrow, trophy, video %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-page">
+
+    <div class="dashboard-topbar">
+        <a href="javascript:history.back()" class="back-btn">{{ back_arrow(20, "#FFD700") }}</a>
+        <h1>Créer</h1>
+    </div>
+
+    <p class="dashboard-subtitle">Que veux-tu publier aujourd'hui ?</p>
+
+    <div class="dashboard-cards">
+
+        <a href="/create_post?type=photo" class="dashboard-card">
+            <div class="dashboard-card-icon">{{ camera(34, "#FFD700") }}</div>
+            <div class="dashboard-card-text">
+                <h2>Post</h2>
+                <p>Partage une photo avec ta guilde</p>
+            </div>
+        </a>
+
+        <a href="/create_post?type=video" class="dashboard-card">
+            <div class="dashboard-card-icon">{{ video(30, "#FFD700") }}</div>
+            <div class="dashboard-card-text">
+                <h2>Kayli</h2>
+                <p>Publie une vidéo courte façon TikTok</p>
+            </div>
+        </a>
+
+        <a href="/duel/new" class="dashboard-card dashboard-card-duel">
+            <div class="dashboard-card-icon">{{ trophy(34, "#FFD700") }}</div>
+            <div class="dashboard-card-text">
+                <h2>Duel</h2>
+                <p>Défie un aventurier et remporte la victoire</p>
+            </div>
+        </a>
+
+    </div>
+
+</div>
+
+{% endblock %}
