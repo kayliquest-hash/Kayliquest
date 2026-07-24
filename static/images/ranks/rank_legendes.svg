@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="rank_legendes" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#d9b8ff"/><stop offset="100%" stop-color="#6a3d9e"/>
+    </radialGradient>
+    <filter id="glow_rank_legendes" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#glow_rank_legendes)">
+    <circle cx="100" cy="100" r="86" fill="url(#rank_legendes)" stroke="#c9a227" stroke-width="6"/>
+    <polygon points="100,52 132,74 132,126 100,148 68,126 68,74" fill="#e9d5ff"/><polyline points="68,74 100,92 132,74" fill="none" stroke="#4c1d78" stroke-width="2"/><polyline points="68,126 100,92 132,126" fill="none" stroke="#4c1d78" stroke-width="2"/><line x1="100" y1="52" x2="100" y2="148" stroke="#4c1d78" stroke-width="2"/>
+  </g>
+</svg>

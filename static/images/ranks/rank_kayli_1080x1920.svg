@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
+  <defs>
+    <linearGradient id="bg_kayli_share" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#241635"/>
+      <stop offset="45%" stop-color="#3a1f4d"/>
+      <stop offset="100%" stop-color="#160d24"/>
+    </linearGradient>
+    <radialGradient id="glow_kayli_share" cx="50%" cy="34%" r="42%">
+      <stop offset="0%" stop-color="#fff4d6" stop-opacity="0.55"/>
+      <stop offset="55%" stop-color="#b18cff" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#241635" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rank_kayli_share" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#fff4d6"/>
+      <stop offset="40%" stop-color="#ffb6e1"/>
+      <stop offset="70%" stop-color="#b18cff"/>
+      <stop offset="100%" stop-color="#6fe3ff"/>
+    </radialGradient>
+    <filter id="glow_badge" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1080" height="1920" fill="url(#bg_kayli_share)"/>
+  <rect x="0" y="0" width="1080" height="1920" fill="url(#glow_kayli_share)"/>
+  <circle cx="726" cy="1334" r="2.2" fill="#ffffff" opacity="0.79"/>
+  <circle cx="991" cy="128" r="4.0" fill="#ffffff" opacity="0.32"/>
+  <circle cx="306" cy="302" r="2.4" fill="#ffffff" opacity="0.55"/>
+  <circle cx="705" cy="369" r="4.5" fill="#ffffff" opacity="0.87"/>
+  <circle cx="110" cy="1779" r="5.9" fill="#ffffff" opacity="0.33"/>
+  <circle cx="207" cy="1476" r="4.2" fill="#ffffff" opacity="0.64"/>
+  <circle cx="165" cy="366" r="4.3" fill="#ffffff" opacity="0.68"/>
+  <circle cx="637" cy="270" r="2.2" fill="#ffffff" opacity="0.42"/>
+  <circle cx="855" cy="1724" r="3.3" fill="#ffffff" opacity="0.65"/>
+  <circle cx="314" cy="1550" r="5.2" fill="#ffffff" opacity="0.72"/>
+  <circle cx="597" cy="1263" r="4.0" fill="#ffffff" opacity="0.51"/>
+  <circle cx="180" cy="309" r="4.0" fill="#ffffff" opacity="0.4"/>
+  <circle cx="491" cy="1335" r="2.2" fill="#ffffff" opacity="0.7"/>
+  <circle cx="408" cy="1751" r="4.8" fill="#ffffff" opacity="0.66"/>
+  <circle cx="920" cy="376" r="2.4" fill="#ffffff" opacity="0.46"/>
+  <circle cx="122" cy="436" r="4.9" fill="#ffffff" opacity="0.49"/>
+  <circle cx="351" cy="1877" r="4.9" fill="#ffffff" opacity="0.83"/>
+  <circle cx="423" cy="1203" r="2.7" fill="#ffffff" opacity="0.37"/>
+  <circle cx="192" cy="1403" r="5.0" fill="#ffffff" opacity="0.54"/>
+  <circle cx="519" cy="334" r="3.6" fill="#ffffff" opacity="0.47"/>
+  <circle cx="783" cy="1620" r="3.7" fill="#ffffff" opacity="0.52"/>
+  <circle cx="144" cy="274" r="2.7" fill="#ffffff" opacity="0.44"/>
+  <circle cx="911" cy="1192" r="4.4" fill="#ffffff" opacity="0.46"/>
+  <circle cx="607" cy="1329" r="3.5" fill="#ffffff" opacity="0.64"/>
+  <circle cx="527" cy="144" r="5.6" fill="#ffffff" opacity="0.77"/>
+  <circle cx="467" cy="1752" r="3.6" fill="#ffffff" opacity="0.36"/>
+
+  <g transform="translate(540,760) scale(3.6) translate(-100,-100)" filter="url(#glow_badge)">
+    <polygon points="100,6 119,60 176,50 140,95 176,148 119,140 100,194 81,140 24,148 60,95 24,50 81,60"
+             fill="url(#rank_kayli_share)" stroke="#ffd700" stroke-width="4" stroke-linejoin="round"/>
+    <polygon points="80,112 90,86 100,101 110,86 120,112" fill="#fff9e6" stroke="#8a5a00" stroke-width="2"/>
+    <rect x="80" y="110" width="40" height="10" fill="#fff9e6" stroke="#8a5a00" stroke-width="2"/>
+    <circle cx="90" cy="86" r="3" fill="#ffd700"/>
+    <circle cx="100" cy="79" r="3.5" fill="#ffd700"/>
+    <circle cx="110" cy="86" r="3" fill="#ffd700"/>
+  </g>
+</svg>

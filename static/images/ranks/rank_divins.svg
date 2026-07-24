@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="rank_divins" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#bfe3ff"/><stop offset="100%" stop-color="#6fb8e8"/>
+    </radialGradient>
+    <filter id="glow_rank_divins" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#glow_rank_divins)">
+    <circle cx="100" cy="100" r="86" fill="url(#rank_divins)" stroke="#3f7fb0" stroke-width="6"/>
+    <g stroke="#ffffff" stroke-width="4" stroke-linecap="round"><line x1="100" y1="38" x2="100" y2="58"/><line x1="100" y1="142" x2="100" y2="162"/><line x1="38" y1="100" x2="58" y2="100"/><line x1="142" y1="100" x2="162" y2="100"/><line x1="58" y1="58" x2="70" y2="70"/><line x1="130" y1="130" x2="142" y2="142"/><line x1="142" y1="58" x2="130" y2="70"/><line x1="70" y1="130" x2="58" y2="142"/></g><circle cx="100" cy="100" r="24" fill="#ffffff"/>
+  </g>
+</svg>

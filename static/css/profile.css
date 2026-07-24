@@ -55,6 +55,26 @@
     border-radius:12px;
 }
 
+.rank-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin-top:8px;
+    background:rgba(255,255,255,0.08);
+    color:#FFD700;
+    font-weight:700;
+    font-size:12px;
+    padding:4px 12px 4px 4px;
+    border-radius:14px;
+    border:1px solid rgba(255,215,0,0.35);
+}
+
+.rank-pill img{
+    width:22px;
+    height:22px;
+    border-radius:50%;
+}
+
 .bio{
     color:#bbb;
     font-size:14px;

@@ -60,6 +60,55 @@ function toggleAdmin(userId, button) {
 
 }
 
+function assignRank(userId, select) {
+
+    select.disabled = true;
+
+    const rankId = select.value;
+
+    fetch("/admin/assign_rank/" + userId, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "rank_id=" + rankId
+    })
+
+        .then(r => r.json())
+
+        .then(data => {
+            select.disabled = false;
+        })
+
+        .catch(() => { select.disabled = false; });
+
+}
+
+function deleteRank(rankId, button) {
+
+    if (!confirm("Supprimer définitivement ce rang ?")) return;
+
+    button.disabled = true;
+
+    fetch("/admin/delete_rank/" + rankId, { method: "POST" })
+
+        .then(r => r.json())
+
+        .then(data => {
+
+            if (!data.success) {
+                button.disabled = false;
+                return;
+            }
+
+            const row = document.querySelector(`[data-rank-row="${rankId}"]`);
+            row.classList.add("removing");
+            setTimeout(() => row.remove(), 300);
+
+        })
+
+        .catch(() => { button.disabled = false; });
+
+}
+
 function deletePost(postId, button) {
 
     if (!confirm("Supprimer définitivement cette publication ?")) return;

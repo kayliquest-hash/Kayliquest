@@ -20,7 +20,7 @@
 
     {% for u in users_list %}
 
-        {% set uid, pseudo, email, photo, u_is_admin, u_is_banned = u %}
+        {% set uid, pseudo, email, photo, u_is_admin, u_is_banned, u_rank_points, u_manual_rank_id = u %}
 
         <div class="admin-row {% if u_is_banned %}is-banned{% endif %}" data-user-row="{{ uid }}">
 
@@ -57,6 +57,14 @@
                     {{ ban(16, "currentColor") }}
                 </button>
 
+                <select class="rank-select" onchange="assignRank({{ uid }}, this)">
+                    <option value="0" {% if not u_manual_rank_id %}selected{% endif %}>Rang auto ({{ u_rank_points or 0 }} pts)</option>
+                    {% for r in ranks_list %}
+                    {% set rid, rname, rthreshold, rbadge = r %}
+                    <option value="{{ rid }}" {% if u_manual_rank_id == rid %}selected{% endif %}>{{ rname }}</option>
+                    {% endfor %}
+                </select>
+
             </div>
 
         </div>
@@ -64,6 +72,43 @@
     {% endfor %}
 
     </div>
+
+    <h2 class="admin-section-title">Rangs ({{ ranks_list|length }})</h2>
+
+    <div class="admin-list">
+
+    {% for r in ranks_list %}
+
+        {% set rid, rname, rthreshold, rbadge = r %}
+
+        <div class="admin-row" data-rank-row="{{ rid }}">
+
+            <img src="{{ url_for('static', filename='images/ranks/' ~ rbadge) }}" class="admin-avatar" alt="{{ rname }}">
+
+            <div class="admin-info">
+                <h3>{{ rname }}</h3>
+                <p>{{ rthreshold }} pts</p>
+            </div>
+
+            <div class="admin-actions">
+                <button class="icon-action-btn active-red" title="Supprimer" onclick="deleteRank({{ rid }}, this)">
+                    {{ trash(16, "currentColor") }}
+                </button>
+            </div>
+
+        </div>
+
+    {% endfor %}
+
+    </div>
+
+    <form method="post" action="/admin/create_rank" class="admin-rank-form">
+        <input type="text" name="name" placeholder="Nom du rang" required>
+        <input type="number" name="threshold" placeholder="Seuil (points)" required>
+        <input type="text" name="badge_filename" placeholder="ex: rank_novice.svg" required>
+        <input type="number" name="order_index" placeholder="Ordre">
+        <button type="submit" class="btn btn-primary">Créer / mettre à jour un rang</button>
+    </form>
 
     <h2 class="admin-section-title">Publications récentes</h2>
 

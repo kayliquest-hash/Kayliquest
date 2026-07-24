@@ -112,6 +112,21 @@ def init_db():
     cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin INTEGER DEFAULT 0")
     cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned INTEGER DEFAULT 0")
 
+    # rank_points est un cumul qui n'est jamais remis à zéro (contrairement à xp,
+    # qui repart à 0 à chaque niveau) : c'est lui qui sert de base aux rangs.
+    cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS rank_points INTEGER DEFAULT 0")
+    cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS manual_rank_id INTEGER")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS ranks (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE,
+        threshold INTEGER DEFAULT 0,
+        badge_filename TEXT,
+        order_index INTEGER DEFAULT 0
+    )
+    """)
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS posts (
         id SERIAL PRIMARY KEY,
@@ -277,6 +292,24 @@ CREATE TABLE IF NOT EXISTS friends (
     ON CONFLICT (code) DO NOTHING
     """, default_quests)
 
+    default_ranks = [
+        ("Novice", 0, "rank_novice.svg", 0),
+        ("Explorateur", 10, "rank_explorateur.svg", 1),
+        ("Guerrier", 30, "rank_guerrier.svg", 2),
+        ("Guerrier aguerri", 60, "rank_guerrier_aguerri.svg", 3),
+        ("Vétéran", 100, "rank_veteran.svg", 4),
+        ("Légendes", 300, "rank_legendes.svg", 5),
+        ("Divins", 1000, "rank_divins.svg", 6),
+        ("Kayli", 10000, "rank_kayli.svg", 7),
+    ]
+
+    cursor.executemany("""
+    INSERT INTO ranks
+    (name, threshold, badge_filename, order_index)
+    VALUES (%s, %s, %s, %s)
+    ON CONFLICT (name) DO NOTHING
+    """, default_ranks)
+
     conn.commit()
     conn.close()
 
@@ -414,6 +447,34 @@ def bump_quest_progress(user_id, quest_type, amount=1):
 
     conn.commit()
     conn.close()
+
+# -------------------------
+# Helpers - Rangs
+# -------------------------
+
+def get_user_rank(cursor, rank_points, manual_rank_id):
+
+    if manual_rank_id:
+
+        cursor.execute(
+            "SELECT id, name, threshold, badge_filename FROM ranks WHERE id=%s",
+            (manual_rank_id,)
+        )
+
+        row = cursor.fetchone()
+
+        if row:
+            return row
+
+    cursor.execute("""
+    SELECT id, name, threshold, badge_filename
+    FROM ranks
+    WHERE threshold <= %s
+    ORDER BY threshold DESC
+    LIMIT 1
+    """, (rank_points or 0,))
+
+    return cursor.fetchone()
 
 @app.context_processor
 def inject_unread_notifications():
@@ -864,6 +925,8 @@ def profile():
     cursor.execute("SELECT COUNT(*) FROM follows WHERE follower_id=%s", (session["user_id"],))
     nb_abonnements = cursor.fetchone()[0]
 
+    user_rank = get_user_rank(cursor, user[11], user[12])
+
     conn.close()
 
     return render_template(
@@ -873,7 +936,8 @@ def profile():
         nb_abonnements=nb_abonnements,
         posts=posts,
         nb_amis=nb_amis,
-        playlist=playlist
+        playlist=playlist,
+        user_rank=user_rank
     )
 
 # -------------------------
@@ -1385,14 +1449,15 @@ def claim_quest(quest_id):
     )
 
     cursor.execute(
-        "SELECT xp, niveau, quetes FROM users WHERE id=%s",
+        "SELECT xp, niveau, quetes, rank_points, manual_rank_id FROM users WHERE id=%s",
         (session["user_id"],)
     )
 
-    xp, niveau, quetes = cursor.fetchone()
+    xp, niveau, quetes, rank_points, manual_rank_id = cursor.fetchone()
 
     xp += xp_reward
     quetes += 1
+    rank_points += xp_reward
 
     leveled_up = False
 
@@ -1403,9 +1468,11 @@ def claim_quest(quest_id):
 
     cursor.execute("""
     UPDATE users
-    SET xp=%s, niveau=%s, quetes=%s
+    SET xp=%s, niveau=%s, quetes=%s, rank_points=%s
     WHERE id=%s
-    """, (xp, niveau, quetes, session["user_id"]))
+    """, (xp, niveau, quetes, rank_points, session["user_id"]))
+
+    new_rank = get_user_rank(cursor, rank_points, manual_rank_id)
 
     conn.commit()
     conn.close()
@@ -1415,7 +1482,9 @@ def claim_quest(quest_id):
         "xp": xp,
         "niveau": niveau,
         "quetes": quetes,
-        "leveled_up": leveled_up
+        "leveled_up": leveled_up,
+        "rank_name": new_rank[1] if new_rank else None,
+        "rank_badge": new_rank[3] if new_rank else None
     })
 
 # -------------------------
@@ -2110,6 +2179,8 @@ def user_profile(user_id):
 
         is_following = cursor.fetchone() is not None
 
+    user_rank = get_user_rank(cursor, user[11], user[12])
+
     conn.close()
 
     return render_template(
@@ -2120,7 +2191,8 @@ def user_profile(user_id):
         friend_status=friend_status,
         nb_abonnes=nb_abonnes,
         nb_abonnements=nb_abonnements,
-        is_following=is_following
+        is_following=is_following,
+        user_rank=user_rank
     )                                                                                                
   
 #--------------------------
@@ -2512,7 +2584,7 @@ def admin_dashboard():
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT id, pseudo, email, photo, is_admin, is_banned
+    SELECT id, pseudo, email, photo, is_admin, is_banned, rank_points, manual_rank_id
     FROM users
     ORDER BY id DESC
     """)
@@ -2534,12 +2606,21 @@ def admin_dashboard():
 
     posts_list = cursor.fetchall()
 
+    cursor.execute("""
+    SELECT id, name, threshold, badge_filename
+    FROM ranks
+    ORDER BY order_index
+    """)
+
+    ranks_list = cursor.fetchall()
+
     conn.close()
 
     return render_template(
         "admin.html",
         users_list=users_list,
-        posts_list=posts_list
+        posts_list=posts_list,
+        ranks_list=ranks_list
     )
 
 @app.route("/admin/toggle_ban/<int:user_id>", methods=["POST"])
@@ -2631,6 +2712,79 @@ def admin_delete_comment(comment_id):
     conn.close()
 
     return jsonify({"success": True})
+
+@app.route("/admin/create_rank", methods=["POST"])
+@admin_required
+def admin_create_rank():
+
+    name = request.form.get("name", "").strip()
+    threshold = request.form.get("threshold", type=int)
+    badge_filename = request.form.get("badge_filename", "").strip()
+    order_index = request.form.get("order_index", type=int) or 0
+
+    if not name or threshold is None or not badge_filename:
+        return redirect("/admin")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    INSERT INTO ranks (name, threshold, badge_filename, order_index)
+    VALUES (%s, %s, %s, %s)
+    ON CONFLICT (name) DO UPDATE
+    SET threshold=EXCLUDED.threshold,
+        badge_filename=EXCLUDED.badge_filename,
+        order_index=EXCLUDED.order_index
+    """, (name, threshold, badge_filename, order_index))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin")
+
+@app.route("/admin/delete_rank/<int:rank_id>", methods=["POST"])
+@admin_required
+def admin_delete_rank(rank_id):
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("UPDATE users SET manual_rank_id=NULL WHERE manual_rank_id=%s", (rank_id,))
+    cursor.execute("DELETE FROM ranks WHERE id=%s", (rank_id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
+
+@app.route("/admin/assign_rank/<int:user_id>", methods=["POST"])
+@admin_required
+def admin_assign_rank(user_id):
+
+    rank_id = request.form.get("rank_id", type=int)  # absent/0 = retirer le rang manuel
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE users SET manual_rank_id=%s WHERE id=%s",
+        (rank_id if rank_id else None, user_id)
+    )
+
+    conn.commit()
+
+    cursor.execute("SELECT rank_points, manual_rank_id FROM users WHERE id=%s", (user_id,))
+    rank_points, manual_rank_id = cursor.fetchone()
+
+    new_rank = get_user_rank(cursor, rank_points, manual_rank_id)
+
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "rank_name": new_rank[1] if new_rank else None,
+        "rank_badge": new_rank[3] if new_rank else None
+    })
 
 # -------------------------
 # Lancement

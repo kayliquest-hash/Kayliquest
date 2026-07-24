@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="rank_kayli" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#fff4d6"/><stop offset="40%" stop-color="#ffb6e1"/><stop offset="70%" stop-color="#b18cff"/><stop offset="100%" stop-color="#6fe3ff"/>
+    </radialGradient>
+    <filter id="glow_rank_kayli" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#glow_rank_kayli)">
+    <polygon points="100,6 119,60 176,50 140,95 176,148 119,140 100,194 81,140 24,148 60,95 24,50 81,60" fill="url(#rank_kayli)" stroke="#ffd700" stroke-width="4" stroke-linejoin="round"/>
+    <polygon points="80,112 90,86 100,101 110,86 120,112" fill="#fff9e6" stroke="#8a5a00" stroke-width="2"/><rect x="80" y="110" width="40" height="10" fill="#fff9e6" stroke="#8a5a00" stroke-width="2"/><circle cx="90" cy="86" r="3" fill="#ffd700"/><circle cx="100" cy="79" r="3.5" fill="#ffd700"/><circle cx="110" cy="86" r="3" fill="#ffd700"/>
+  </g>
+</svg>

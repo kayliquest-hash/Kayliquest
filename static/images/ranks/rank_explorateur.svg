@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="rank_explorateur" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#bcd9a0"/><stop offset="100%" stop-color="#5c7a45"/>
+    </radialGradient>
+  </defs>
+  <g>
+    <circle cx="100" cy="100" r="86" fill="url(#rank_explorateur)" stroke="#3c5233" stroke-width="6"/>
+    <polygon points="100,58 113,100 100,142 87,100" fill="#1f3d1a"/><circle cx="100" cy="100" r="6" fill="#f4f4f4"/>
+  </g>
+</svg>

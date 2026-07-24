@@ -26,6 +26,13 @@
 
         <div class="level-pill">Niveau {{ user[7] }}</div>
 
+        {% if user_rank %}
+        <div class="rank-pill">
+            <img src="{{ url_for('static', filename='images/ranks/' ~ user_rank[3]) }}" alt="{{ user_rank[1] }}">
+            <span>{{ user_rank[1] }}</span>
+        </div>
+        {% endif %}
+
         {% if user[4] %}
         <p class="bio">{{ user[4] }}</p>
         {% endif %}
